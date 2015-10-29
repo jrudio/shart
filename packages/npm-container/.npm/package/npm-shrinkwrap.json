@@ -1,0 +1,12 @@
+{
+  "dependencies": {
+    "commander": {
+      "version": "2.9.0",
+      "dependencies": {
+        "graceful-readlink": {
+          "version": "1.0.1"
+        }
+      }
+    }
+  }
+}
