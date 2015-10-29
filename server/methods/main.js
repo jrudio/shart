@@ -55,24 +55,25 @@ function parseCommand (options) {
   let fillerForCommander = [null, null]
 
   // Extract the first arg which should be the command
-  // Also, get the rest of the text except spaces as that 
-  // is the media being requested.
-  // Ex. ['add'] or ['remove']
+  // Ex. ['add'], ['remove'] or ['show']
   let command = text.match(/^\w+/)
 
-  // Remove command and extra whitespace from string
+  // Remove command and the trailing whitespace from string
   cmd = text.replace(command[0] + ' ', '')
 
-  // Get rest of the string. It should be the title or imdb_id
+  // Use the rest of the string. It should be the title or imdb_id
   // And, pass the username and channel
   // Ex. 'Harry Potter' or 'tt1764'
   let option = {
-    media: cmd.match(/[\s\w]+/)[0],
+    media: cmd,
     name: user_name,
     channel: `#${channel_name}`
   }
 
-  // Ex. ['add', {
+  // Ex: 
+  // [
+  //   'add',
+  //   {
   //     media: 'Harry Potter',
   //     name: 'bob123',
   //     channel: '#general'
@@ -80,11 +81,16 @@ function parseCommand (options) {
   // ]
   command = command.concat(option)
 
-  // Ex. [null, null, 'add', {
-  //     media: 'Harry Potter',
-  //     name: 'bob123',
-  //     channel: '#general'
-  //   }
+  // Ex: 
+  // [
+  //    null,
+  //    null,
+  //    'add',
+  //    {
+  //      media: 'Harry Potter',
+  //      name: 'bob123',
+  //      channel: '#general'
+  //    }
   // ]
   cmd = fillerForCommander.concat(command)
 
