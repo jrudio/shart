@@ -1,5 +1,3 @@
-Api = {}
-
 Api.DEFAULT_RESPONSE = {
   error: null,
   message: null,
