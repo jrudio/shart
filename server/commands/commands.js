@@ -59,8 +59,12 @@ Commander
       channel
     } = options
 
-    // Construct the user-readable message
-    let msg = `Showing ${media} as requested by @${name}`
-
-    Slack.respondAsMediaBot(msg, channel)
+    // Determine whether to show individual media, a list of media, etc
+    CommandHelpers.parseShow(media)
+      .then(text => {
+        console.log('Response:')
+        console.log(text)
+        Slack.respondAsMediaBot(text, channel)
+      })
+      .catch(e => console.error(e.message))
   })
