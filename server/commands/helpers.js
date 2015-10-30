@@ -1,5 +1,3 @@
-CommandHelpers = {}
-
 _.extend(CommandHelpers, {
   /**
   * @param {String} Media requested
@@ -22,10 +20,10 @@ _.extend(CommandHelpers, {
         break
       case 'charts':
         result = couchpotato.charts
+          .then(r => CouchPotato.Format.charts(r))
         break
       case 'test':
         result = couchpotato.isAvailable
-          .then(r => r.success)
           .then(r => CouchPotato.Format.test(r))
         break
       // Show individual media

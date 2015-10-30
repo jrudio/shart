@@ -1,3 +1,4 @@
 Api = {}
+CommandHelpers = {}
 CouchPotato = {}
 Slack = {}
