@@ -1,4 +1,0 @@
-Api = {}
-CommandHelpers = {}
-CouchPotato = {}
-Slack = {}

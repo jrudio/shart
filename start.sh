@@ -1,1 +1,0 @@
-meteor --settings settings.json
