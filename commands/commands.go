@@ -3,56 +3,84 @@ package commands
 import (
 	"fmt"
 	"github.com/jrudio/shart/api"
+	"regexp"
+	"strconv"
 	"strings"
 )
 
 // Get first chunk of text; that should be the command
 // Execute appropriate function
 // TODO: Method type may be a problem
-func ParseCmd(text string, server *serverApi.Server) string {
+func ParseCmd(text string, server server.Server) string {
 	// Lowercase that shit
 	text = strings.ToLower(text)
 
-	// First word should be the command
-	cmd := strings.Fields(text)[0]
+	// The text will be parsed as (search)( )(lord of the rings)
+	cmdRegex := regexp.MustCompile(`(\w+)(\s)?([\w\s]+)?`)
 
-	// Remove that cmd from string and the extra whitespace that follows it
-	text = strings.Replace(text, cmd+" ", "", 1)
+	parsedText := cmdRegex.FindStringSubmatch(text)
 
-	// fmt.Println("Cmd:", cmd)
-	// fmt.Println("Text:", text)
+	if len(parsedText) == 0 {
+		return "Error: Please provide a command and an argument (e.g. search <movie-title>)"
+	}
 
-	var formattedText string = ""
+	// First parenthesis should be command
+	cmd := parsedText[1]
+
+	// Third group of parenthesis should be the media title or imdb_id
+	args := parsedText[3]
+
+	if cmd != "test" && args == "" {
+		return "Error: Please enter a title or id. (e.g. search Interstellar)"
+	}
+
+	var formattedText string
 
 	switch cmd {
 	// Add
-	// TODO: Implement this command
 	case "add":
-		fmt.Printf("Adding %v\n", text)
-		// formattedText = AddMedia()
+		formattedText = server.AddMovieToWanted(args)
 
 	// Show
-	// TODO: Implement this command
 	case "show":
-		fmt.Printf("Showing %v\n", text)
+		if args == "wanted" {
+			// The user wants to display the wanted list
+			list, listErr := server.ShowWanted("", "")
 
-	// Delete
-	// TODO: Implement this command
-	case "delete":
-		fmt.Printf("Deleting %v\n", text)
+			if listErr != nil {
+				formattedText = listErr.Error()
+			} else {
+				// Format the list for Slack
+				formattedText = FormatWanted(list)
+			}
+		} else {
+			// TODO: Implement showing individual media with
+			// expanded information
+			formattedText = fmt.Sprintf("Showing %v\n", args)
+		}
+
+	// Remove
+	case "remove":
+		formattedText = server.RemoveMovieFromWanted(args)
 
 	// Search
 	case "search":
-		fmt.Printf("Searching for %v\n", text)
-		// Make the api call
-		// server.Search(text) // text === media title
-		txt := server.Search(text) // text === media title
+		txt := server.Search(args)
 
 		// Format that result for Slack
-		formattedText = formatSearch(text, txt)
+		formattedText = formatSearch(args, txt)
+	case "test":
+		test := server.TestConnection()
 
+		formattedText = "Connection to CouchPotato "
+
+		if test {
+			formattedText += "worked"
+		} else {
+			formattedText += "failed"
+		}
 	default:
-		fmt.Println("Command not recognized")
+		formattedText = "Command not recognized"
 	}
 
 	return formattedText
@@ -107,4 +135,62 @@ func formatSearch(title string, result []map[string]string) string {
 	}
 
 	return f
+}
+
+////////////////////////////////////
+// Showing <count> movies in your wanted list:
+// 		ID: <media_id>
+//
+// [] <title> - <year>:
+// 		ID: <media_id>
+// 		<plot>
+// [] <title> - <year>:
+// 		ID: <media_id>
+// 		<plot>
+// [] <title> - <year>:
+// 		ID: <media_id>
+// 		<plot>
+// [] <title> - <year>:
+// 		ID: <media_id>
+// 		<plot>
+// [] <title> - <year>:
+// 		<plot>
+//
+////////////////////////////////////
+
+func FormatWanted(list server.WantedList) string {
+	movieCount := strconv.Itoa(list.Total)
+
+	formattedText := "Showing *" + movieCount + "* movies from your wanted list:"
+
+	// Newline
+	formattedText += "\n"
+
+	for _, movie := range list.Movies {
+		// Add the bullet point emoji-shit
+		formattedText += ":black_small_square:\t"
+
+		// Title
+		formattedText += "*" + movie.Title + " "
+
+		// Year
+		formattedText += "(" + strconv.Itoa(movie.Info.Year) + ") "
+
+		// Divider
+		formattedText += " - "
+
+		// Media id
+		formattedText += movie.MediaID + "* "
+
+		// // Newline and Tab
+		formattedText += ":\n\t"
+
+		// Plot
+		formattedText += movie.Info.Plot
+
+		// Newline
+		formattedText += "\n"
+	}
+
+	return formattedText
 }
