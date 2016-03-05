@@ -1,3 +1,6 @@
+Project is now being written in Go and is on the branch `go`
+===
+
 Shart
 ===
 
