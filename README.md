@@ -36,7 +36,7 @@ then
 `go install github.com/jrudio/shart`
 
 ###Alternatively
-You can download the pre-compiled version in the releases section
+You can download the [pre-compiled version in the releases section](https://github.com/jrudio/shart/releases) of this repo.
 
 ####Only tested on Mac OS X 10.10.5 (Yosemite)
 
