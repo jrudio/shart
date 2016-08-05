@@ -1,3 +1,5 @@
-*.json
 .DS_Store
 publish.sh
+vendor/*
+!vendor/vendor.json
+config.toml
