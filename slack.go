@@ -4,14 +4,15 @@ import "encoding/json"
 
 // Slack information required to talk to Slack
 type Slack struct {
-	IncomingURL string `toml:"incomingURL"`
-	Token       string `toml:"token"`
-	BotName     string `toml:"botName"`
+	IncomingWebhook string `toml:"incomingWebhook"`
+	BotName         string `toml:"botName"`
 }
 
 type slackPayload struct {
 	Title       string                   `json:"title"`
 	Text        string                   `json:"text"`
+	Username    string                   `json:"username"`
+	Markdown    bool                     `json:"mrkdwn"`
 	Attachments []slackPayloadAttachment `json:"attachments"`
 }
 

@@ -54,25 +54,25 @@ func init() {
 	// check required values
 	var hasErrs bool
 
-	if config.Slack.IncomingURL == "" {
-		log.WithField("slack.incomingURL", "empty").Error("missing required arg")
+	if config.Slack.IncomingWebhook == "" {
+		log.WithField("slack.incomingWebhook", "empty").Error("missing required arg")
 		hasErrs = true
-	} else if config.Slack.IncomingURL == "http://hooks.slack.com/services" {
-		log.WithField("slack.incomingURL", config.Slack.IncomingURL).Error("invalid webhook - please go to https://slack.com/services/new/incoming-webhook to create a valid webhook")
+	} else if config.Slack.IncomingWebhook == "http://hooks.slack.com/services" {
+		log.WithField("slack.incomingWebhook", config.Slack.IncomingWebhook).Error("invalid webhook - please go to https://slack.com/services/new/incoming-webhook to create a valid webhook")
 		hasErrs = true
 	}
 
 	// check optional values and display missing as warning
 	if config.Couchpotato.Host == "" {
-		log.WithField("couchpotato", config.Couchpotato).Warn("missing required arg")
+		log.WithField("couchpotato", config.Couchpotato).Warn("missing arg")
 	}
 
 	if config.Sonarr.Host == "" || config.Sonarr.APIKey == "" {
-		log.WithField("sonarr", config.Sonarr).Warn("missing required args")
+		log.WithField("sonarr", config.Sonarr).Warn("missing args")
 	}
 
 	if config.Plex.Host == "" || config.Plex.Token == "" {
-		log.WithField("plex", config.Plex).Warn("missing required args")
+		log.WithField("plex", config.Plex).Warn("missing args")
 	}
 
 	if hasErrs {
@@ -88,6 +88,9 @@ func init() {
 	if config.Slack.BotName == "" {
 		config.Slack.BotName = "ShartBot"
 	}
+
+	// build the api base urls here
+	config.Couchpotato.BuildURL()
 }
 
 func writeDefaultConfig(filename string) (int, error) {
