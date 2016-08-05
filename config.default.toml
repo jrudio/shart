@@ -1,18 +1,21 @@
 [couchpotato]
 host = "http://192.168.1.10"
 apiKey = "abc123"
+slackToken = "abc123"
 
-[sonarr]
+[sonarr] # not implemented
 host = "http://192.168.1.10"
 apiKey = "abc123"
+slackToken = "abc123"
 
-[plex]
+[plex] # not implemented
 host = "http://192.168.1.10"
 token = "abc123"
+slackToken = "abc123"
 
 [slack]
-incomingURL = "http://hooks.slack.com/services"
-token = "abc123"
+# incomingWebhook is required to post to slack
+incomingWebhook = "http://hooks.slack.com/services"
 botName = "ShartBot"
 
 [shart]
