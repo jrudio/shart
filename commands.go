@@ -1,17 +1,16 @@
-package commands
+package main
 
 import (
 	"fmt"
-	"github.com/jrudio/shart/api"
 	"regexp"
 	"strconv"
 	"strings"
 )
 
-// Get first chunk of text; that should be the command
+// ParseCMD gets first chunk of text; that should be the command
 // Execute appropriate function
 // TODO: Method type may be a problem
-func ParseCmd(text string, server server.Server) string {
+func ParseCMD(text string, server Server) string {
 	// Lowercase that shit
 	text = strings.ToLower(text)
 
@@ -51,7 +50,7 @@ func ParseCmd(text string, server server.Server) string {
 				formattedText = listErr.Error()
 			} else {
 				// Format the list for Slack
-				formattedText = FormatWanted(list)
+				formattedText = formatWanted(list)
 			}
 		} else {
 			// TODO: Implement showing individual media with
@@ -118,7 +117,7 @@ func ParseCmd(text string, server server.Server) string {
 //    <plot>
 ////////////////////////////////////
 func formatSearch(title string, result []map[string]string) string {
-	var f string = "\nSearched for: *" + title + "*\n"
+	var f = "\nSearched for: *" + title + "*\n"
 
 	for ii := 0; ii < len(result); ii++ {
 		// "m" for movie ya bish
@@ -158,7 +157,7 @@ func formatSearch(title string, result []map[string]string) string {
 //
 ////////////////////////////////////
 
-func FormatWanted(list server.WantedList) string {
+func formatWanted(list WantedList) string {
 	movieCount := strconv.Itoa(list.Total)
 
 	formattedText := "Showing *" + movieCount + "* movies from your wanted list:"

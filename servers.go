@@ -1,4 +1,4 @@
-package server
+package main
 
 import (
 	"encoding/json"
@@ -22,22 +22,22 @@ type (
 	}
 
 	CouchPotato struct {
-		Url     string
-		FullUrl string // Url built with api key or other credentials
-		ApiKey  string
-		Success bool `json:"success"`
+		Host    string `toml:"host"`
+		FullURL string // Url built with api key or other credentials
+		APIKey  string `toml:"apiKey"`
+		Success bool   `json:"success"`
 	}
 
 	Sonarr struct {
-		Url     string
-		FullUrl string // Url built with api key or other credentials
-		ApiKey  string
+		Host    string `toml:"host"`
+		FullURL string // Url built with api key or other credentials
+		APIKey  string `toml:"apiKey"`
 	}
 
 	Plex struct {
-		Url     string
-		FullUrl string // Url built with api key or other credentials
-		ApiKey  string
+		Host    string `toml:"host"`
+		FullURL string // URL built with api key or other credentials
+		Token   string `toml:"token"`
 	}
 
 	WantedList struct {
@@ -94,7 +94,7 @@ func request(reqUrl string) ([]byte, error) {
 }
 
 func (c *CouchPotato) BuildUrl() {
-	c.FullUrl = c.Url + "/api/" + c.ApiKey
+	c.FullURL = c.Host + "/api/" + c.APIKey
 }
 
 func (c *CouchPotato) Search(title string) []map[string]string {
@@ -106,7 +106,7 @@ func (c *CouchPotato) Search(title string) []map[string]string {
 
 	query := "/search/?q=" + encodedTitle
 
-	url := c.FullUrl + query
+	url := c.FullURL + query
 
 	resp, reqErr := http.Get(url)
 
@@ -178,7 +178,7 @@ func (c *CouchPotato) ShowWanted(startsWith, limitOffset string) (WantedList, er
 		query += "&limits_offset=" + limitOffset
 	}
 
-	reqUrl := c.FullUrl + query
+	reqUrl := c.FullURL + query
 
 	body, bodyErr := request(reqUrl)
 
@@ -223,7 +223,7 @@ func (c *CouchPotato) AddMovieToWanted(mediaID string) string {
 
 	query += mediaID
 
-	reqUrl := c.FullUrl + query
+	reqUrl := c.FullURL + query
 
 	// Parse the response
 	body, readBodyErr := request(reqUrl)
@@ -266,7 +266,7 @@ func (c *CouchPotato) removeMovie(mediaID, fromList string) ([]byte, error) {
 	query += fromList
 
 	// Build the url
-	reqUrl := c.FullUrl + query
+	reqUrl := c.FullURL + query
 
 	body, bodyErr := request(reqUrl)
 
@@ -315,7 +315,7 @@ func (c *CouchPotato) RemoveMovieFromWanted(mediaID string) string {
 
 func (c CouchPotato) TestConnection() bool {
 	query := "/app.available"
-	resp, err := http.Get(c.FullUrl + query)
+	resp, err := http.Get(c.FullURL + query)
 
 	if err != nil {
 		log.Println("Test Connection: " + err.Error())
