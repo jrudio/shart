@@ -10,7 +10,7 @@ import (
 // ParseCMD gets first chunk of text; that should be the command
 // Execute appropriate function
 // TODO: Method type may be a problem
-func ParseCMD(text string, server Server) string {
+func ParseCMD(text string, srvr server) string {
 	// Lowercase that shit
 	text = strings.ToLower(text)
 
@@ -38,13 +38,13 @@ func ParseCMD(text string, server Server) string {
 	switch cmd {
 	// Add
 	case "add":
-		formattedText = server.AddMovieToWanted(args)
+		formattedText = srvr.AddMovieToWanted(args)
 
 	// Show
 	case "show":
 		if args == "wanted" {
 			// The user wants to display the wanted list
-			list, listErr := server.ShowWanted("", "")
+			list, listErr := srvr.ShowWanted("", "")
 
 			if listErr != nil {
 				formattedText = listErr.Error()
@@ -60,16 +60,16 @@ func ParseCMD(text string, server Server) string {
 
 	// Remove
 	case "remove":
-		formattedText = server.RemoveMovieFromWanted(args)
+		formattedText = srvr.RemoveMovieFromWanted(args)
 
 	// Search
 	case "search":
-		txt := server.Search(args)
+		txt := srvr.Search(args)
 
 		// Format that result for Slack
 		formattedText = formatSearch(args, txt)
 	case "test":
-		test := server.TestConnection()
+		test := srvr.TestConnection()
 
 		formattedText = "Connection to CouchPotato "
 
@@ -157,7 +157,7 @@ func formatSearch(title string, result []map[string]string) string {
 //
 ////////////////////////////////////
 
-func formatWanted(list WantedList) string {
+func formatWanted(list wantedList) string {
 	movieCount := strconv.Itoa(list.Total)
 
 	formattedText := "Showing *" + movieCount + "* movies from your wanted list:"

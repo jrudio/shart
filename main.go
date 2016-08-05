@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	config.CouchPotato.BuildUrl()
+	config.couchPotato.BuildURL()
 
 	gin.SetMode(gin.ReleaseMode)
 
@@ -79,7 +79,7 @@ func parseMediaRequest(c *gin.Context) {
 
 	go func() {
 		// Parse <media> to get the requested commands, titles, etc
-		txt := ParseCMD(media, &config.CouchPotato)
+		txt := ParseCMD(media, &config.couchPotato)
 
 		// Reply to same channel as MediaBot
 		replyToChannel(channel, txt)

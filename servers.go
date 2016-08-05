@@ -10,37 +10,37 @@ import (
 )
 
 type (
-	Server interface {
-		BuildUrl()
+	server interface {
+		BuildURL()
 		Search(title string) []map[string]string
 		TestConnection() bool
 		// TODO: When I start working on Sonarr I may have to
 		// make this function name more generic for Sonarr
 		AddMovieToWanted(mediaID string) string
 		RemoveMovieFromWanted(mediaID string) string
-		ShowWanted(startsWith, limitOffset string) (WantedList, error)
+		ShowWanted(startsWith, limitOffset string) (wantedList, error)
 	}
 
-	CouchPotato struct {
+	couchPotato struct {
 		Host    string `toml:"host"`
 		FullURL string // Url built with api key or other credentials
 		APIKey  string `toml:"apiKey"`
 		Success bool   `json:"success"`
 	}
 
-	Sonarr struct {
+	sonarr struct {
 		Host    string `toml:"host"`
 		FullURL string // Url built with api key or other credentials
 		APIKey  string `toml:"apiKey"`
 	}
 
-	Plex struct {
+	plex struct {
 		Host    string `toml:"host"`
 		FullURL string // URL built with api key or other credentials
 		Token   string `toml:"token"`
 	}
 
-	WantedList struct {
+	wantedList struct {
 		Movies []struct {
 			Releases []struct {
 				Status  string `json:"status"`
@@ -60,7 +60,7 @@ type (
 	}
 )
 
-func EncodeUrl(str string) (string, error) {
+func encodeURL(str string) (string, error) {
 	u, err := url.Parse(str)
 
 	if err != nil {
@@ -70,9 +70,9 @@ func EncodeUrl(str string) (string, error) {
 	return u.String(), nil
 }
 
-func request(reqUrl string) ([]byte, error) {
+func request(reqURL string) ([]byte, error) {
 	// Send the request
-	resp, respErr := http.Get(reqUrl)
+	resp, respErr := http.Get(reqURL)
 
 	// Check for an error
 	if respErr != nil {
@@ -93,12 +93,12 @@ func request(reqUrl string) ([]byte, error) {
 	return body, nil
 }
 
-func (c *CouchPotato) BuildUrl() {
+func (c *couchPotato) BuildURL() {
 	c.FullURL = c.Host + "/api/" + c.APIKey
 }
 
-func (c *CouchPotato) Search(title string) []map[string]string {
-	encodedTitle, encodeErr := EncodeUrl(title)
+func (c *couchPotato) Search(title string) []map[string]string {
+	encodedTitle, encodeErr := encodeURL(title)
 
 	if encodeErr != nil {
 		log.Fatal(encodeErr)
@@ -162,7 +162,7 @@ func (c *CouchPotato) Search(title string) []map[string]string {
 // ShowWanted shows the wanted list from CouchPotato.
 // startsWith can be an empty string to show the whole wanted list
 // limitOffset can be passed in the form "50" or "50,30". Empty shows all
-func (c *CouchPotato) ShowWanted(startsWith, limitOffset string) (WantedList, error) {
+func (c *couchPotato) ShowWanted(startsWith, limitOffset string) (wantedList, error) {
 	query := "/media.list/?"
 
 	// Show the wanted list
@@ -178,21 +178,21 @@ func (c *CouchPotato) ShowWanted(startsWith, limitOffset string) (WantedList, er
 		query += "&limits_offset=" + limitOffset
 	}
 
-	reqUrl := c.FullURL + query
+	reqURL := c.FullURL + query
 
-	body, bodyErr := request(reqUrl)
+	body, bodyErr := request(reqURL)
 
 	if bodyErr != nil {
-		return WantedList{}, bodyErr
+		return wantedList{}, bodyErr
 		// return "Error: " + bodyErr.Error()
 	}
 
-	var list WantedList
+	var list wantedList
 
 	unmarshalErr := json.Unmarshal(body, &list)
 
 	if unmarshalErr != nil {
-		return WantedList{}, unmarshalErr
+		return wantedList{}, unmarshalErr
 		// return "Error: " + unmarshalErr.Error()
 	}
 
@@ -214,7 +214,7 @@ func (c *CouchPotato) ShowWanted(startsWith, limitOffset string) (WantedList, er
 	return list, nil
 }
 
-func (c *CouchPotato) AddMovieToWanted(mediaID string) string {
+func (c *couchPotato) AddMovieToWanted(mediaID string) string {
 	if mediaID == "" {
 		return "Error: Cannot add movie. Please provide the imdb_id"
 	}
@@ -223,10 +223,10 @@ func (c *CouchPotato) AddMovieToWanted(mediaID string) string {
 
 	query += mediaID
 
-	reqUrl := c.FullURL + query
+	reqURL := c.FullURL + query
 
 	// Parse the response
-	body, readBodyErr := request(reqUrl)
+	body, readBodyErr := request(reqURL)
 
 	if readBodyErr != nil {
 		return "Error: " + readBodyErr.Error()
@@ -251,7 +251,7 @@ func (c *CouchPotato) AddMovieToWanted(mediaID string) string {
 	return "Successfully added movie to the wanted list"
 }
 
-func (c *CouchPotato) removeMovie(mediaID, fromList string) ([]byte, error) {
+func (c *couchPotato) removeMovie(mediaID, fromList string) ([]byte, error) {
 	if fromList == "" {
 		fromList = "all"
 	}
@@ -266,9 +266,9 @@ func (c *CouchPotato) removeMovie(mediaID, fromList string) ([]byte, error) {
 	query += fromList
 
 	// Build the url
-	reqUrl := c.FullURL + query
+	reqURL := c.FullURL + query
 
-	body, bodyErr := request(reqUrl)
+	body, bodyErr := request(reqURL)
 
 	if bodyErr != nil {
 		return nil, bodyErr
@@ -281,7 +281,7 @@ func (c *CouchPotato) removeMovie(mediaID, fromList string) ([]byte, error) {
 	return body, nil
 }
 
-func (c *CouchPotato) RemoveMovieFromWanted(mediaID string) string {
+func (c *couchPotato) RemoveMovieFromWanted(mediaID string) string {
 	if mediaID == "" {
 		return "Error: Cannot remove movie. Please provide the media id."
 	}
@@ -313,7 +313,7 @@ func (c *CouchPotato) RemoveMovieFromWanted(mediaID string) string {
 	return "Successfully removed movie from the wanted list"
 }
 
-func (c CouchPotato) TestConnection() bool {
+func (c couchPotato) TestConnection() bool {
 	query := "/app.available"
 	resp, err := http.Get(c.FullURL + query)
 
@@ -334,7 +334,7 @@ func (c CouchPotato) TestConnection() bool {
 	// Change type to string
 	newBody := string(body)
 
-	var r CouchPotato
+	var r couchPotato
 
 	// Make usable via Go
 	_err2 := json.Unmarshal([]byte(newBody), &r)
