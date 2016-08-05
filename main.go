@@ -2,14 +2,13 @@ package main
 
 import (
 	"bytes"
-	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
 
 func main() {
-	config.couchPotato.BuildURL()
+	config.Couchpotato.BuildURL()
 
 	gin.SetMode(gin.ReleaseMode)
 
@@ -22,6 +21,8 @@ func main() {
 		v1.POST("m", parseMediaRequest)
 	}
 
+	log.WithField("host", config.Shart.Host).Info("listening for connections...")
+
 	// Start up server to listen for commands coming from Slack
 	routerErr := router.Run(config.Shart.Host)
 
@@ -30,8 +31,32 @@ func main() {
 	}
 }
 
+func parseMediaRequest(c *gin.Context) {
+	// Get form data from POST request
+	token := c.PostForm("token")
+
+	// But first check the request was from Slack
+	if token != config.Slack.Token {
+		c.String(http.StatusUnauthorized, "Not Authorized")
+		return
+	}
+
+	channel := c.PostForm("channel_name")
+	media := c.PostForm("text")
+
+	// Ack the user
+	c.String(http.StatusOK, "Request received!")
+
+	go func() {
+		// Parse <media> to get the requested commands, titles, etc
+		txt := ParseCMD(media, &config.Couchpotato)
+
+		// Reply to same channel as MediaBot
+		replyToChannel(channel, txt)
+	}()
+}
+
 func replyToChannel(channel, text string) {
-	// Use gabs to generate json
 	payload := slackPayload{
 		Title: "New message from " + config.Slack.BotName,
 		Text:  text,
@@ -53,35 +78,10 @@ func replyToChannel(channel, text string) {
 		return
 	}
 
-	defer resp.Body.Close()
-
-	fmt.Printf("\nReply to channel status code: %v", resp.Status)
-}
-
-func parseMediaRequest(c *gin.Context) {
-	// Ack the user
-
-	// Destructure Post data
-	token := c.PostForm("token")
-
-	fmt.Println("token:", token)
-
-	// But first check the request was from Slack
-	if token != config.Slack.Token {
-		c.String(403, "Not Authorized")
-		return
+	if err = resp.Body.Close(); err != nil {
+		log.WithFields(log.Fields{
+			"channel": channel,
+			"text":    text,
+		}).Error(err)
 	}
-
-	channel := c.PostForm("channel_name")
-	media := c.PostForm("text")
-
-	c.String(200, "Request received!")
-
-	go func() {
-		// Parse <media> to get the requested commands, titles, etc
-		txt := ParseCMD(media, &config.couchPotato)
-
-		// Reply to same channel as MediaBot
-		replyToChannel(channel, txt)
-	}()
 }

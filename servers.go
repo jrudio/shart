@@ -2,9 +2,9 @@ package main
 
 import (
 	"encoding/json"
+	log "github.com/Sirupsen/logrus"
 	"github.com/jeffail/gabs"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 )
@@ -22,22 +22,24 @@ type (
 	}
 
 	couchPotato struct {
-		Host    string `toml:"host"`
-		FullURL string // Url built with api key or other credentials
-		APIKey  string `toml:"apiKey"`
+		Host string `toml:"host" json:"-"`
+		// Url built with api key or other credentials
+		FullURL string `json:"-"`
+		APIKey  string `toml:"apiKey" json:"-"`
 		Success bool   `json:"success"`
 	}
 
 	sonarr struct {
-		Host    string `toml:"host"`
-		FullURL string // Url built with api key or other credentials
-		APIKey  string `toml:"apiKey"`
+		Host string `toml:"host" json:"-"`
+		// Url built with api key or other credentials
+		FullURL string `json:"-"`
+		APIKey  string `toml:"apiKey" json:"-"`
 	}
 
 	plex struct {
-		Host    string `toml:"host"`
+		Host    string `toml:"host" json:"-"`
 		FullURL string // URL built with api key or other credentials
-		Token   string `toml:"token"`
+		Token   string `toml:"token" json:"-"`
 	}
 
 	wantedList struct {
@@ -314,37 +316,30 @@ func (c *couchPotato) RemoveMovieFromWanted(mediaID string) string {
 }
 
 func (c couchPotato) TestConnection() bool {
-	query := "/app.available"
-	resp, err := http.Get(c.FullURL + query)
+	query := c.FullURL + "/app.available"
+	resp, err := get(query)
 
 	if err != nil {
-		log.Println("Test Connection: " + err.Error())
+		log.WithField("couchpotato.test", c).Error(err)
 		return false
 	}
 
 	defer resp.Body.Close()
 
-	body, readBodyErr := ioutil.ReadAll(resp.Body)
-
-	if readBodyErr != nil {
-		log.Println("Response Body: " + readBodyErr.Error())
+	if resp.StatusCode != http.StatusOK {
+		log.WithField("couchpotato.test", c).Error(resp.Status)
 		return false
 	}
-
-	// Change type to string
-	newBody := string(body)
 
 	var r couchPotato
 
-	// Make usable via Go
-	_err2 := json.Unmarshal([]byte(newBody), &r)
-
-	if _err2 != nil {
-		log.Println(_err2)
+	if err = json.NewDecoder(resp.Body).Decode(&r); err != nil {
+		log.WithFields(log.Fields{
+			"couchpotato.test": c,
+			"reason":           "possibly bad api key",
+		}).Error(err)
 		return false
 	}
-
-	// fmt.Println(r.Success)
 
 	return r.Success
 }

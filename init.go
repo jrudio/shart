@@ -10,9 +10,9 @@ import (
 
 type shartConfig struct {
 	Slack       `toml:"slack"`
-	couchPotato `toml:"couchpotato"`
-	sonarr      `toml:"sonarr"`
-	plex        `toml:"plex"`
+	Couchpotato couchPotato `toml:"couchpotato"`
+	Sonarr      sonarr      `toml:"sonarr"`
+	Plex        plex        `toml:"plex"`
 	Shart       struct {
 		Host string `toml:"host"`
 	} `toml:"shart"`
@@ -63,16 +63,16 @@ func init() {
 	}
 
 	// check optional values and display missing as warning
-	if config.couchPotato.Host == "" {
-		log.WithField("couchpotato", config.couchPotato).Warn("missing required arg")
+	if config.Couchpotato.Host == "" {
+		log.WithField("couchpotato", config.Couchpotato).Warn("missing required arg")
 	}
 
-	if config.sonarr.Host == "" || config.sonarr.APIKey == "" {
-		log.WithField("sonarr", config.sonarr).Warn("missing required args")
+	if config.Sonarr.Host == "" || config.Sonarr.APIKey == "" {
+		log.WithField("sonarr", config.Sonarr).Warn("missing required args")
 	}
 
-	if config.plex.Host == "" || config.plex.Token == "" {
-		log.WithField("plex", config.sonarr).Warn("missing required args")
+	if config.Plex.Host == "" || config.Plex.Token == "" {
+		log.WithField("plex", config.Plex).Warn("missing required args")
 	}
 
 	if hasErrs {
