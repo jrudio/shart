@@ -1,0 +1,19 @@
+[couchpotato]
+host = "http://192.168.1.10"
+apiKey = "abc123"
+
+[sonarr]
+host = "http://192.168.1.10"
+apiKey = "abc123"
+
+[plex]
+host = "http://192.168.1.10"
+token = "abc123"
+
+[slack]
+incomingURL = "http://hooks.slack.com/services"
+token = "abc123"
+botName = "ShartBot"
+
+[shart]
+host = "localhost:4040"
