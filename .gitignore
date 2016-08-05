@@ -3,3 +3,4 @@ publish.sh
 vendor/*
 !vendor/vendor.json
 config.toml
+shart
