@@ -17,8 +17,9 @@ func main() {
 
 	v1 := router.Group("/v1")
 	{
-		v1.POST("media", parseMediaRequest)
-		v1.POST("m", parseMediaRequest)
+		v1.POST("/couchpotato", parseMediaRequest(config.Couchpotato))
+		// v1.POST("/sonarr", parseMediaRequest(config.Sonarr))
+		// v1.POST("/plex", parseMediaRequest(config.Plex))
 	}
 
 	log.WithField("host", config.Shart.Host).Info("listening for connections...")
@@ -31,35 +32,58 @@ func main() {
 	}
 }
 
-func parseMediaRequest(c *gin.Context) {
-	// Get form data from POST request
-	token := c.PostForm("token")
+func parseMediaRequest(srvr server) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		// Get form data from POST request
+		token := c.PostForm("token")
 
-	// But first check the request was from Slack
-	if token != config.Slack.Token {
-		c.String(http.StatusUnauthorized, "Not Authorized")
-		return
+		// But first check the request was from Slack
+		if token != srvr.slackToken() {
+			c.String(http.StatusUnauthorized, "Not Authorized")
+			return
+		}
+
+		channel := c.PostForm("channel_name")
+		media := c.PostForm("text")
+
+		// Ack the user
+		// c.String(http.StatusOK, "Request received!")
+
+		go func() {
+			cmd, args := srvr.parseSlackInput(media)
+
+			text, err := srvr.doAction(cmd, args)
+
+			if err != nil {
+				log.WithFields(log.Fields{
+					"command": cmd,
+					"args":    args,
+				}).Error(err)
+				replyToChannel(channel, "failed to parse command")
+				return
+			}
+
+			// text = srvr.formatText(cmd, text)
+
+			// Reply to same channel as botName
+			replyToChannel(channel, text)
+		}()
 	}
-
-	channel := c.PostForm("channel_name")
-	media := c.PostForm("text")
-
-	// Ack the user
-	c.String(http.StatusOK, "Request received!")
-
-	go func() {
-		// Parse <media> to get the requested commands, titles, etc
-		txt := ParseCMD(media, &config.Couchpotato)
-
-		// Reply to same channel as MediaBot
-		replyToChannel(channel, txt)
-	}()
 }
 
 func replyToChannel(channel, text string) {
 	payload := slackPayload{
-		Title: "New message from " + config.Slack.BotName,
-		Text:  text,
+		Username: config.Slack.BotName,
+		// Title:    "New message from " + config.Slack.BotName,
+		// Text:     text,
+		Markdown: true,
+		Attachments: []slackPayloadAttachment{
+			slackPayloadAttachment{
+				Color:    "good",
+				Fallback: "this is a fallback message",
+				Text:     text,
+			},
+		},
 	}
 
 	payloadBytes, err := payload.toBytes()
@@ -71,7 +95,7 @@ func replyToChannel(channel, text string) {
 
 	// Send request
 	var resp *http.Response
-	resp, err = http.Post(config.Slack.IncomingURL, "application/json", bytes.NewBuffer(payloadBytes))
+	resp, err = http.Post(config.Slack.IncomingWebhook, "application/json", bytes.NewBuffer(payloadBytes))
 
 	if err != nil {
 		log.Error(err)

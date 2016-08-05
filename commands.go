@@ -1,89 +1,8 @@
 package main
 
 import (
-	"fmt"
-	"regexp"
 	"strconv"
-	"strings"
 )
-
-// ParseCMD gets first chunk of text; that should be the command
-// Execute appropriate function
-// TODO: Method type may be a problem
-func ParseCMD(text string, srvr server) string {
-	// Lowercase that shit
-	text = strings.ToLower(text)
-
-	// The text will be parsed as (search)( )(lord of the rings)
-	cmdRegex := regexp.MustCompile(`(\w+)(\s)?([\w\s]+)?`)
-
-	parsedText := cmdRegex.FindStringSubmatch(text)
-
-	if len(parsedText) == 0 {
-		return "Error: Please provide a command and an argument (e.g. search <movie-title>)"
-	}
-
-	// First parenthesis should be command
-	cmd := parsedText[1]
-
-	// Third group of parenthesis should be the media title or imdb_id
-	args := parsedText[3]
-
-	if cmd != "test" && args == "" {
-		return "Error: Please enter a title or id. (e.g. search Interstellar)"
-	}
-
-	var formattedText string
-
-	switch cmd {
-	// Add
-	case "add":
-		formattedText = srvr.AddMovieToWanted(args)
-
-	// Show
-	case "show":
-		if args == "wanted" {
-			// The user wants to display the wanted list
-			list, listErr := srvr.ShowWanted("", "")
-
-			if listErr != nil {
-				formattedText = listErr.Error()
-			} else {
-				// Format the list for Slack
-				formattedText = formatWanted(list)
-			}
-		} else {
-			// TODO: Implement showing individual media with
-			// expanded information
-			formattedText = fmt.Sprintf("Showing %v\n", args)
-		}
-
-	// Remove
-	case "remove":
-		formattedText = srvr.RemoveMovieFromWanted(args)
-
-	// Search
-	case "search":
-		txt := srvr.Search(args)
-
-		// Format that result for Slack
-		formattedText = formatSearch(args, txt)
-	case "test":
-		test := srvr.TestConnection()
-
-		formattedText = "Connection to CouchPotato "
-
-		if test {
-			formattedText += "worked"
-		} else {
-			formattedText += "failed"
-		}
-	default:
-		formattedText = "Command not recognized"
-	}
-
-	return formattedText
-}
 
 /* Format messages for Slack */
 
