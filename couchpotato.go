@@ -99,9 +99,9 @@ func (c couchPotato) parseSlackInput(input string) (string, []string) {
 
 }
 
-func (c couchPotato) doAction(cmd string, args []string) (string, error) {
+func (c couchPotato) doAction(cmd string, args []string) (slackPayload, error) {
 	if cmd == "" {
-		return "", errors.New("user failed to supply command")
+		return slackPayload{}, errors.New("user failed to supply command")
 	}
 
 	switch cmd {
@@ -142,52 +142,86 @@ func (c couchPotato) doAction(cmd string, args []string) (string, error) {
 				"args":    args,
 			}).Error(err)
 
-			return "", errors.New("search failed")
+			return slackPayload{}, errors.New("search failed")
 		}
 
 		if !searchResults.Success {
-			return "", errors.New("search failed")
+			return slackPayload{}, errors.New("search failed")
 		}
 
-		return searchResults.formatSearch(title), nil
+		payload := slackPayload{
+			Text:        "Searched for `" + title + "`:",
+			Attachments: searchResults.formatSearch(),
+		}
+
+		return payload, nil
 	case "test":
 		testConn := c.TestConnection()
 
 		formattedText := "Connection to CouchPotato "
 
+		var color string
+
 		if testConn {
 			formattedText += "worked!"
+			color = "good"
 		} else {
 			formattedText += "failed!"
+			color = "bad"
 		}
 
-		return formattedText, nil
+		payload := slackPayload{
+			Attachments: []slackPayloadAttachment{
+				slackPayloadAttachment{
+					Color: color,
+					Text:  formattedText,
+				},
+			},
+		}
+
+		return payload, nil
 	default:
-		return "", errors.New("command not recognized")
+		return slackPayload{}, errors.New("command not recognized")
 	}
 }
 
-func (c couchpotatoSearch) formatSearch(title string) string {
-	var formattedText = "\nSearched for: *" + title + "*\n"
+func (c couchpotatoSearch) formatSearch() []slackPayloadAttachment {
+	searchResultLen := len(c.Movies)
 
-	for _, movie := range c.Movies {
-		id := movie.Imdb
+	attachments := make([]slackPayloadAttachment, searchResultLen)
 
-		if id == "{}" {
-			id = "no_id"
-		}
-
+	for ii, movie := range c.Movies {
 		year := strconv.Itoa(movie.Year)
 
 		if year == "" {
 			year = "n/a"
 		}
 
-		formattedText += ":black_small_square:\t*id: " + id + "* * " + movie.OriginalTitle + "* - *" + year +
-			"*:\n\t" + movie.Plot + "\n"
+		attachments[ii] = slackPayloadAttachment{
+			Color:          "#000",
+			Title:          movie.OriginalTitle + " (" + year + ")",
+			Text:           movie.Plot,
+			Fallback:       "You are unable to interact with Couchpotato search",
+			AttachmentType: "default",
+			CallbackID:     "",
+			Actions: []slackPayloadAction{
+				slackPayloadAction{
+					Name:  "add_wanted",
+					Text:  "Add to wanted",
+					Type:  "button",
+					Value: "add_wanted",
+					Confirm: slackPayloadConfirm{
+						Title:       "Are you sure?",
+						Text:        "Adding _" + movie.OriginalTitle + "_",
+						OKText:      "yes",
+						DismissText: "no",
+					},
+				},
+			},
+		}
 	}
 
-	return formattedText
+	return attachments
 }
 
 func (c *couchPotato) BuildURL() {

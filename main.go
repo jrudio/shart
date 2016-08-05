@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	log "github.com/Sirupsen/logrus"
 	"github.com/gin-gonic/gin"
 	"net/http"
@@ -52,39 +51,35 @@ func parseMediaRequest(srvr server) func(c *gin.Context) {
 		go func() {
 			cmd, args := srvr.parseSlackInput(media)
 
-			text, err := srvr.doAction(cmd, args)
+			payload, err := srvr.doAction(cmd, args)
 
 			if err != nil {
 				log.WithFields(log.Fields{
 					"command": cmd,
 					"args":    args,
 				}).Error(err)
-				replyToChannel(channel, "failed to parse command")
+
+				errPayload := slackPayload{
+					Channel: channel,
+					Text:    "failed to parse command",
+				}
+
+				replyToChannel(errPayload)
 				return
 			}
 
 			// text = srvr.formatText(cmd, text)
+			payload.Channel = channel
 
 			// Reply to same channel as botName
-			replyToChannel(channel, text)
+			replyToChannel(payload)
 		}()
 	}
 }
 
-func replyToChannel(channel, text string) {
-	payload := slackPayload{
-		Username: config.Slack.BotName,
-		// Title:    "New message from " + config.Slack.BotName,
-		// Text:     text,
-		Markdown: true,
-		Attachments: []slackPayloadAttachment{
-			slackPayloadAttachment{
-				Color:    "good",
-				Fallback: "this is a fallback message",
-				Text:     text,
-			},
-		},
-	}
+func replyToChannel(payload slackPayload) {
+	payload.Username = config.Slack.BotName
+	payload.Markdown = true
 
 	payloadBytes, err := payload.toBytes()
 
@@ -95,7 +90,7 @@ func replyToChannel(channel, text string) {
 
 	// Send request
 	var resp *http.Response
-	resp, err = http.Post(config.Slack.IncomingWebhook, "application/json", bytes.NewBuffer(payloadBytes))
+	resp, err = post(config.Slack.IncomingWebhook, payloadBytes)
 
 	if err != nil {
 		log.Error(err)
@@ -104,8 +99,8 @@ func replyToChannel(channel, text string) {
 
 	if err = resp.Body.Close(); err != nil {
 		log.WithFields(log.Fields{
-			"channel": channel,
-			"text":    text,
+			"channel": payload.Channel,
+			"payload": payload,
 		}).Error(err)
 	}
 }

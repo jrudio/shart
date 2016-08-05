@@ -9,6 +9,7 @@ type Slack struct {
 }
 
 type slackPayload struct {
+	Channel     string                   `json:"channel"`
 	Title       string                   `json:"title"`
 	Text        string                   `json:"text"`
 	Username    string                   `json:"username"`
@@ -17,12 +18,15 @@ type slackPayload struct {
 }
 
 type slackPayloadAttachment struct {
-	AuthorIcon string `json:"author_icon"`
-	AuthorLink string `json:"author_link"`
-	AuthorName string `json:"author_name"`
-	Color      string `json:"color"`
-	Fallback   string `json:"fallback"`
-	Fields     []struct {
+	Actions        []slackPayloadAction `json:"actions"`
+	AttachmentType string               `json:"attachment_type"`
+	AuthorIcon     string               `json:"author_icon"`
+	AuthorLink     string               `json:"author_link"`
+	AuthorName     string               `json:"author_name"`
+	CallbackID     string               `json:"callback_id"`
+	Color          string               `json:"color"`
+	Fallback       string               `json:"fallback"`
+	Fields         []struct {
 		Short bool   `json:"short"`
 		Title string `json:"title"`
 		Value string `json:"value"`
@@ -36,6 +40,22 @@ type slackPayloadAttachment struct {
 	Title      string `json:"title"`
 	TitleLink  string `json:"title_link"`
 	Timestamp  int    `json:"ts"`
+}
+
+type slackPayloadAction struct {
+	Name    string              `json:"name"`
+	Text    string              `json:"text"`
+	Type    string              `json:"type"`
+	Value   string              `json:"value"`
+	Style   string              `json:"style"`
+	Confirm slackPayloadConfirm `json:"confirm"`
+}
+
+type slackPayloadConfirm struct {
+	Title       string `json:"title"`
+	Text        string `json:"text"`
+	OKText      string `json:"ok_text"`
+	DismissText string `json:"dismiss_text"`
 }
 
 func (s slackPayload) toBytes() ([]byte, error) {

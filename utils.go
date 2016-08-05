@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"net/http"
 	"net/url"
 	"time"
@@ -18,6 +19,22 @@ func get(query string) (*http.Response, error) {
 	if err != nil {
 		return &http.Response{}, err
 	}
+
+	return client.Do(req)
+}
+
+func post(query string, body []byte) (*http.Response, error) {
+	client := http.Client{
+		Timeout: 3 * time.Second,
+	}
+
+	req, err := http.NewRequest("POST", query, bytes.NewBuffer(body))
+
+	if err != nil {
+		return &http.Response{}, err
+	}
+
+	req.Header.Set("Content-type", "application/json")
 
 	return client.Do(req)
 }
