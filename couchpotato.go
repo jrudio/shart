@@ -286,22 +286,22 @@ func (c couchPotato) doUserReply(cmd string, args url.Values) (slackPayload, err
 	case "add":
 		imdbID := args.Get("imdb_id")
 
-		// movieAdded, err := c.AddMovieToWanted(imdbID)
+		movieAdded, err := c.AddMovieToWanted(imdbID)
 
-		// if err != nil {
-		// 	return slackPayload{}, err
-		// }
+		if err != nil {
+			return slackPayload{}, err
+		}
 
-		// if !movieAdded {
-		return slackPayload{
-			Attachments: []slackPayloadAttachment{
-				slackPayloadAttachment{
-					Color: "danger",
-					Text:  "Failed to add movie: " + imdbID,
+		if !movieAdded {
+			return slackPayload{
+				Attachments: []slackPayloadAttachment{
+					slackPayloadAttachment{
+						Color: "danger",
+						Text:  "Failed to add movie: " + imdbID,
+					},
 				},
-			},
-		}, nil
-		// }
+			}, nil
+		}
 
 		payload := slackPayload{
 			Attachments: []slackPayloadAttachment{
