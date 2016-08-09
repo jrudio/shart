@@ -20,3 +20,4 @@ botName = "ShartBot"
 
 [shart]
 host = "localhost:4040"
+rootURL = "http://localhost:4040"
