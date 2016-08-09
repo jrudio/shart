@@ -1,8 +1,11 @@
 package main
 
+import "net/url"
+
 type (
 	server interface {
 		doAction(cmd string, args []string) (slackPayload, error)
+		doUserReply(cmd string, args url.Values) (slackPayload, error)
 		// formatText(cmd, result string) string
 		parseSlackInput(input string) (string, []string)
 		slackToken() string

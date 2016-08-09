@@ -25,7 +25,7 @@ func (e endpointHandlers) parseMediaRequest(srvr server) func(c *gin.Context) {
 		media := c.PostForm("text")
 
 		// Ack the user
-		// c.String(http.StatusOK, "Request received!")
+		c.String(http.StatusOK, "Processing...")
 
 		go func() {
 			cmd, args := srvr.parseSlackInput(media)
@@ -40,14 +40,14 @@ func (e endpointHandlers) parseMediaRequest(srvr server) func(c *gin.Context) {
 
 				errPayload := slackPayload{
 					Channel: channel,
-					Text:    "failed to parse command",
+					// Text:    "failed to parse command",
+					Text: err.Error(),
 				}
 
 				e.replyToChannel(errPayload)
 				return
 			}
 
-			// text = srvr.formatText(cmd, text)
 			payload.Channel = channel
 
 			// Reply to same channel as botName
@@ -81,5 +81,47 @@ func (e endpointHandlers) replyToChannel(payload slackPayload) {
 			"channel": payload.Channel,
 			"payload": payload,
 		}).Error(err)
+	}
+}
+
+// cmdReply handles a user's reply to a command
+func (e endpointHandlers) cmdReply(srvr server) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		// parse command and any args
+		cmd := c.Param("cmd")
+
+		if cmd == "" {
+			c.String(http.StatusBadRequest, "Received empty command")
+		}
+
+		args := c.Request.URL.Query()
+
+		payload, err := srvr.doUserReply(cmd, args)
+
+		payload.Username = config.Slack.BotName
+		payload.Markdown = true
+
+		if err != nil {
+			log.WithFields(log.Fields{
+				"command": cmd,
+				"args":    args,
+			}).Error(err)
+
+			errPayload := slackPayload{
+				// Channel: channel,
+				Text: err.Error(),
+			}
+
+			c.Redirect(http.StatusTemporaryRedirect, "slack://channel")
+			go e.replyToChannel(errPayload)
+			return
+		}
+
+		// payload.Channel = channel
+
+		// Reply to same channel as botName
+		e.replyToChannel(payload)
+
+		c.Redirect(http.StatusTemporaryRedirect, "slack://channel")
 	}
 }

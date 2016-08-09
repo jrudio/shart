@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	log "github.com/Sirupsen/logrus"
+	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 )
@@ -198,27 +200,31 @@ func (c couchpotatoSearch) formatSearch() []slackPayloadAttachment {
 		}
 
 		attachments[ii] = slackPayloadAttachment{
-			Color:          "#000",
+			// Color:          "#000",
 			Title:          movie.OriginalTitle + " (" + year + ")",
 			Text:           movie.Plot,
 			Fallback:       "You are unable to interact with Couchpotato search",
 			AttachmentType: "default",
-			CallbackID:     "",
-			Actions: []slackPayloadAction{
-				slackPayloadAction{
-					Name:  "add_wanted",
-					Text:  "Add to wanted",
-					Type:  "button",
-					Value: "add_wanted",
-					Confirm: slackPayloadConfirm{
-						Title:       "Are you sure?",
-						Text:        "Adding _" + movie.OriginalTitle + "_",
-						OKText:      "yes",
-						DismissText: "no",
-					},
-				},
-			},
 		}
+
+		if !movie.InWanted {
+			attachments[ii].Fields = []slackPayloadFields{
+				slackPayloadFields{
+					Value: "",
+				},
+				slackPayloadFields{
+					Value: "<" + config.Shart.RootURL + "/couchpotato/add?imdb_id=" + movie.Imdb + "|Add to wanted>",
+					Short: true,
+				},
+			}
+		}
+
+		if movie.InLibrary {
+			attachments[ii].Actions = append(attachments[ii].Actions, slackPayloadAction{
+				Text: "Movie already in library",
+			})
+		}
+
 	}
 
 	return attachments
@@ -233,11 +239,13 @@ func (c couchPotato) slackToken() string {
 }
 
 func (c couchPotato) Search(title string) (couchpotatoSearch, error) {
-	encodedTitle, err := encodeURL(title)
+	// encodedTitle, err := encodeURL(title)
+	encodedTitle := url.QueryEscape(title)
+	var err error
 
-	if err != nil {
-		return couchpotatoSearch{}, err
-	}
+	// if err != nil {
+	// 	return couchpotatoSearch{}, err
+	// }
 
 	query := c.FullURL + "/search/?q=" + encodedTitle
 
@@ -254,7 +262,60 @@ func (c couchPotato) Search(title string) (couchpotatoSearch, error) {
 
 	err = json.NewDecoder(resp.Body).Decode(&result)
 
+	if err != nil {
+		var bodyBytes []byte
+		bodyBytes, err = ioutil.ReadAll(resp.Body)
+
+		if err != nil {
+			log.Println(err)
+			return result, err
+		}
+
+		log.Println(string(bodyBytes))
+	}
+
 	return result, err
+}
+
+func (c couchPotato) doUserReply(cmd string, args url.Values) (slackPayload, error) {
+	if cmd == "" {
+		return slackPayload{}, errors.New("user failed to supply command")
+	}
+
+	switch cmd {
+	case "add":
+		imdbID := args.Get("imdb_id")
+
+		// movieAdded, err := c.AddMovieToWanted(imdbID)
+
+		// if err != nil {
+		// 	return slackPayload{}, err
+		// }
+
+		// if !movieAdded {
+		return slackPayload{
+			Attachments: []slackPayloadAttachment{
+				slackPayloadAttachment{
+					Color: "danger",
+					Text:  "Failed to add movie: " + imdbID,
+				},
+			},
+		}, nil
+		// }
+
+		payload := slackPayload{
+			Attachments: []slackPayloadAttachment{
+				slackPayloadAttachment{
+					Color: "good",
+					Text:  "Added movie: " + imdbID,
+				},
+			},
+		}
+
+		return payload, nil
+	default:
+		return slackPayload{}, errors.New("unknown command")
+	}
 }
 
 // ShowWanted shows the wanted list from CouchPotato.
@@ -296,9 +357,9 @@ func (c couchPotato) ShowWanted(startsWith, limitOffset string) (wantedList, err
 	return list, nil
 }
 
-func (c couchPotato) AddMovieToWanted(mediaID string) string {
+func (c couchPotato) AddMovieToWanted(mediaID string) (bool, error) {
 	if mediaID == "" {
-		return "Error: Cannot add movie. Please provide the imdb_id"
+		return false, errors.New("imdb_id required")
 	}
 
 	query := "/movie.add/?identifier="
@@ -311,7 +372,7 @@ func (c couchPotato) AddMovieToWanted(mediaID string) string {
 	resp, err := get(query)
 
 	if err != nil {
-		return "Error: " + err.Error()
+		return false, err
 	}
 
 	defer resp.Body.Close()
@@ -322,15 +383,9 @@ func (c couchPotato) AddMovieToWanted(mediaID string) string {
 
 	var result movieAdd
 
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return "Error: " + err.Error()
-	}
+	err = json.NewDecoder(resp.Body).Decode(&result)
 
-	if !result.Success {
-		return "Failed to add movie to the wanted list"
-	}
-
-	return "Successfully added movie to the wanted list"
+	return result.Success, err
 }
 
 func (c couchPotato) removeMovie(mediaID, fromList string) (*http.Response, error) {

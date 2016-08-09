@@ -13,6 +13,8 @@ func main() {
 	// Start server
 	router := gin.Default()
 
+	router.GET("/couchpotato/:cmd", endpoint.cmdReply(config.Couchpotato))
+
 	api := router.Group("/v1")
 	{
 		api.POST("/couchpotato", endpoint.parseMediaRequest(config.Couchpotato))

@@ -14,7 +14,8 @@ type shartConfig struct {
 	Sonarr      sonarr      `toml:"sonarr"`
 	Plex        plex        `toml:"plex"`
 	Shart       struct {
-		Host string `toml:"host"`
+		Host    string `toml:"host"`
+		RootURL string `toml:"rootURL"`
 	} `toml:"shart"`
 }
 
