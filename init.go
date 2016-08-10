@@ -24,13 +24,20 @@ var config shartConfig
 func init() {
 	// set log level
 	showDebug := flag.Bool("debug", false, "log debugging information")
+	configFilePath := flag.String("config", "", "./config.toml")
+
+	flag.Parse()
 
 	if *showDebug {
 		log.SetLevel(log.DebugLevel)
 	}
 
+	if *configFilePath == "" {
+		*configFilePath = "config.toml"
+	}
+
 	// get config values
-	_, err := toml.DecodeFile("config.toml", &config)
+	_, err := toml.DecodeFile(*configFilePath, &config)
 
 	if err != nil {
 		// likely file not found error, so write the default config to file
