@@ -107,31 +107,35 @@ func (c couchPotato) doAction(cmd string, args []string) (slackPayload, error) {
 	}
 
 	switch cmd {
-	// Add
-	// case "add":
-	// 	formattedText = config.Couchpotato.AddMovieToWanted(args)
-
 	// Show
-	// case "show":
-	// 	if args == "wanted" {
-	// 		// The user wants to display the wanted list
-	// 		list, listErr := config.Couchpotato.ShowWanted("", "")
+	case "show":
+		argsCount := len(args)
 
-	// 		if listErr != nil {
-	// 			formattedText = listErr.Error()
-	// 		} else {
-	// 			// Format the list for Slack
-	// 			formattedText = formatWanted(list)
-	// 		}
-	// 	} else {
-	// 		// TODO: Implement showing individual media with
-	// 		// expanded information
-	// 		formattedText = fmt.Sprintf("Showing %v\n", args)
-	// 	}
+		if argsCount == 0 {
+			return slackPayload{}, errors.New("At least one argument is needed for `show`")
+		}
 
-	// Remove
-	// case "remove":
-	// 	formattedText = config.Couchpotato.RemoveMovieFromWanted(args)
+		if args[0] == "wanted" {
+			// The user wants to display the wanted list
+			list, err := c.ShowWanted("", "")
+
+			if err != nil {
+				return slackPayload{}, err
+			}
+
+			// Format the list for Slack
+			return slackPayload{
+				Text:        "Showing `wanted`:",
+				Attachments: list.formatWanted(),
+			}, nil
+		}
+
+		// TODO: Implement showing individual media with
+		// expanded information
+		return slackPayload{
+			Text: "Showing information for id: `" + args[0] + "`",
+			// Attachments: c.formatWanted(),
+		}, nil
 
 	// search
 	case "search":
@@ -200,7 +204,6 @@ func (c couchpotatoSearch) formatSearch() []slackPayloadAttachment {
 		}
 
 		attachments[ii] = slackPayloadAttachment{
-			// Color:          "#000",
 			Title:          movie.OriginalTitle + " (" + year + ")",
 			Text:           movie.Plot,
 			Fallback:       "You are unable to interact with Couchpotato search",
@@ -337,24 +340,40 @@ func (c couchPotato) ShowWanted(startsWith, limitOffset string) (wantedList, err
 		query += "&limits_offset=" + limitOffset
 	}
 
-	reqURL := c.FullURL + query
+	query = c.FullURL + query
 
-	resp, err := get(reqURL)
+	resp, err := get(query)
 
 	if err != nil {
 		return wantedList{}, err
-		// return "Error: " + bodyErr.Error()
 	}
 
 	defer resp.Body.Close()
 
 	var list wantedList
 
-	if err := json.NewDecoder(resp.Body).Decode(&list); err != nil {
-		return wantedList{}, err
+	err = json.NewDecoder(resp.Body).Decode(&list)
+
+	return list, err
+}
+
+func (w wantedList) formatWanted() []slackPayloadAttachment {
+	attachments := []slackPayloadAttachment{
+		slackPayloadAttachment{},
 	}
 
-	return list, nil
+	attachments[0].Fields = make([]slackPayloadFields, w.Total)
+
+	for ii, movie := range w.Movies {
+		year := strconv.Itoa(movie.Info.Year)
+
+		attachments[0].Fields[ii] = slackPayloadFields{
+			Value: movie.Title + " (" + year + ")",
+			Short: true,
+		}
+	}
+
+	return attachments
 }
 
 func (c couchPotato) AddMovieToWanted(mediaID string) (bool, error) {
