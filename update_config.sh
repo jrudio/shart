@@ -1,1 +1,0 @@
-go-bindata -o default_config.go config.default.toml
