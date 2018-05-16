@@ -11,6 +11,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/jrudio/go-radarr-client"
+	sonarr "github.com/jrudio/go-sonarr-client"
 )
 
 const (
@@ -52,6 +53,12 @@ type serviceCredentials struct {
 	sonarr sonarrCredentials
 }
 
+type clients struct {
+	// TODO: maybe add discord here as well?
+	radarr radarr.Client
+	sonarr *sonarr.Sonarr
+}
+
 func checkErrAndExit(err error) {
 	if err != nil {
 		fmt.Println(err)
@@ -72,6 +79,10 @@ func main() {
 		os.Exit(1)
 	}
 
+	services, err := initializeClients(credentials)
+
+	checkErrAndExit(err)
+
 	discord, err := discordgo.New("Bot " + credentials.shart.token)
 
 	checkErrAndExit(err)
@@ -81,7 +92,7 @@ func main() {
 
 	commandList := newDiscord(discord)
 
-	commandList = addCommands(commandList, credentials)
+	commandList = addCommands(commandList, services)
 
 	discord.AddHandler(onMsgCreate(commandList))
 
@@ -157,7 +168,7 @@ func onMsgCreate(commandList commands) func(s *discordgo.Session, m *discordgo.M
 	}
 }
 
-func addCommands(commandList d, credentials serviceCredentials) d {
+func addCommands(commandList d, services clients) d {
 	commandList.addCommand("search", func(channelID string, args ...string) {
 		argCount := len(args)
 
@@ -174,7 +185,38 @@ func addCommands(commandList d, credentials serviceCredentials) d {
 			args = args[1:argCount]
 			argCount--
 
-			client := radarr.New(credentials.radarr.url, credentials.radarr.apiKey)
+			if argCount <= 0 {
+				commandList.showError(channelID, "A title is required")
+				return
+			}
+
+			title := strings.Join(args, " ")
+
+			results, err := services.radarr.Search(title)
+
+			if err != nil {
+				commandList.showError(channelID, err.Error())
+				return
+			}
+
+			resultCount := len(results)
+			formattedResults := "No results found"
+
+			if resultCount > 0 {
+				formattedResults = "Here are your search results for `" + title + "`:\n"
+
+				for _, result := range results {
+					formattedResults += "- " + result.Title + " " + strconv.Itoa(result.Year) + " (" + strconv.Itoa(result.TmdbID) + ")\n"
+				}
+			}
+
+			commandList.discord.ChannelMessageSend(channelID, formattedResults)
+
+			return
+		case "show":
+			args = args[1:argCount]
+
+			argCount--
 
 			if argCount <= 0 {
 				commandList.showError(channelID, "A title is required")
@@ -183,30 +225,25 @@ func addCommands(commandList d, credentials serviceCredentials) d {
 
 			title := strings.Join(args, " ")
 
-			results, err := client.Search(title)
+			results, err := services.sonarr.Search(title)
 
 			if err != nil {
 				commandList.showError(channelID, err.Error())
+				return
 			}
 
 			resultCount := len(results)
 			formattedResults := "No results found"
 
 			if resultCount > 0 {
-				formattedResults = "Here are your search results:\n"
+				formattedResults = "Here are your search results for `" + title + "`:\n"
 
 				for _, result := range results {
-					formattedResults += result.Title + "\n"
+					formattedResults += "- " + result.Title + " " + strconv.Itoa(result.Year) + " (" + result.ImdbID + ")\n"
 				}
 			}
 
 			commandList.discord.ChannelMessageSend(channelID, formattedResults)
-
-			return
-		case "show":
-			msg := "Sorry! This feature is currently not implemented"
-
-			commandList.discord.ChannelMessageSend(channelID, msg)
 		default:
 			// unknown type
 			msg := "Unknown media type"

@@ -7,6 +7,9 @@ import (
 	"net/http"
 	"net/url"
 	"time"
+
+	"github.com/jrudio/go-radarr-client"
+	"github.com/jrudio/go-sonarr-client"
 )
 
 // utils.go holds network utils and function helpers
@@ -62,7 +65,7 @@ func getCredentials() (serviceCredentials, error) {
 	flag.StringVar(&credentials.radarr.url, "radarr-url", "", "url that points to your radarr app")
 	flag.StringVar(&credentials.radarr.apiKey, "radarr-key", "", "api key used for radarr")
 	flag.StringVar(&credentials.sonarr.url, "sonarr-url", "", "url that points to your sonarr app")
-	flag.StringVar(&credentials.sonarr.url, "sonarr-key", "", "api key used for sonarr")
+	flag.StringVar(&credentials.sonarr.apiKey, "sonarr-key", "", "api key used for sonarr")
 	flag.BoolVar(&isVerbose, "verbose", false, "output more inforation")
 
 	flag.Parse()
@@ -72,4 +75,20 @@ func getCredentials() (serviceCredentials, error) {
 	}
 
 	return credentials, nil
+}
+
+func initializeClients(credentials serviceCredentials) (clients, error) {
+	services := clients{}
+
+	services.radarr = radarr.New(credentials.radarr.url, credentials.radarr.apiKey)
+
+	sonarrClient, err := sonarr.New(credentials.sonarr.url, credentials.sonarr.apiKey)
+
+	if err != nil {
+		return services, errors.New("sonarr client failed: " + err.Error())
+	}
+
+	services.sonarr = sonarrClient
+
+	return services, nil
 }
