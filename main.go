@@ -15,14 +15,16 @@ import (
 )
 
 const (
-	// keyword is the trigger for our program to listen to
+	// keyword is the trigger word for our program to listen to
 	keyword = "shart"
 )
 
 var (
-	keywordLen  = 0
-	commandList commands
-	isVerbose   bool
+	keywordLen             = 0
+	commandList            commands
+	isVerbose              bool
+	defaultRadarrPath      string
+	defaultRadarrQualityID int
 )
 
 type commands interface {
@@ -289,8 +291,15 @@ func addCommands(commandList d, services clients) d {
 
 		if err := commandList.discord.ChannelMessagesBulkDelete(channelID, messageIDs); err != nil {
 			fmt.Printf("failed to delete messages: %v\n", err)
+			commandList.showError(channelID, err.Error())
 		}
 	})
+
+	commandList.addCommand("add", addMedia(commandList, services))
+	commandList.addCommand("quality", showQualityProfiles(commandList, services))
+	commandList.addCommand("folders", showRootFolders(commandList, services))
+	commandList.addCommand("set-quality", setQualityProfile(commandList, services))
+	commandList.addCommand("set-folder", setRootFolder(commandList, services))
 
 	return commandList
 }

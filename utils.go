@@ -80,7 +80,13 @@ func getCredentials() (serviceCredentials, error) {
 func initializeClients(credentials serviceCredentials) (clients, error) {
 	services := clients{}
 
-	services.radarr = radarr.New(credentials.radarr.url, credentials.radarr.apiKey)
+	radarrClient, err := radarr.New(credentials.radarr.url, credentials.radarr.apiKey)
+
+	if err != nil {
+		return services, errors.New("radarr client failed: " + err.Error())
+	}
+
+	services.radarr = radarrClient
 
 	sonarrClient, err := sonarr.New(credentials.sonarr.url, credentials.sonarr.apiKey)
 
