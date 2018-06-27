@@ -171,89 +171,7 @@ func onMsgCreate(commandList commands) func(s *discordgo.Session, m *discordgo.M
 }
 
 func addCommands(commandList d, services clients) d {
-	commandList.addCommand("search", func(channelID string, args ...string) {
-		argCount := len(args)
-
-		if argCount <= 0 {
-			fmt.Printf("%s - channel id: %s - no args\n", time.Now().String(), channelID)
-			commandList.showHelp(channelID)
-			return
-		}
-
-		// we have to parse the first arg to know if we're dealing
-		// with a movie or a show type search
-		switch args[0] {
-		case "movie":
-			args = args[1:argCount]
-			argCount--
-
-			if argCount <= 0 {
-				commandList.showError(channelID, "A title is required")
-				return
-			}
-
-			title := strings.Join(args, " ")
-
-			results, err := services.radarr.Search(title)
-
-			if err != nil {
-				commandList.showError(channelID, err.Error())
-				return
-			}
-
-			resultCount := len(results)
-			formattedResults := "No results found"
-
-			if resultCount > 0 {
-				formattedResults = "Here are your search results for `" + title + "`:\n"
-
-				for _, result := range results {
-					formattedResults += "- " + result.Title + " " + strconv.Itoa(result.Year) + " (" + strconv.Itoa(result.TmdbID) + ")\n"
-				}
-			}
-
-			commandList.discord.ChannelMessageSend(channelID, formattedResults)
-
-			return
-		case "show":
-			args = args[1:argCount]
-
-			argCount--
-
-			if argCount <= 0 {
-				commandList.showError(channelID, "A title is required")
-				return
-			}
-
-			title := strings.Join(args, " ")
-
-			results, err := services.sonarr.Search(title)
-
-			if err != nil {
-				commandList.showError(channelID, err.Error())
-				return
-			}
-
-			resultCount := len(results)
-			formattedResults := "No results found"
-
-			if resultCount > 0 {
-				formattedResults = "Here are your search results for `" + title + "`:\n"
-
-				for _, result := range results {
-					formattedResults += "- " + result.Title + " " + strconv.Itoa(result.Year) + " (" + result.ImdbID + ")\n"
-				}
-			}
-
-			commandList.discord.ChannelMessageSend(channelID, formattedResults)
-		default:
-			// unknown type
-			msg := "Unknown media type"
-
-			commandList.discord.ChannelMessageSend(channelID, msg)
-			commandList.showHelp(channelID)
-		}
-	})
+	commandList.addCommand("search", search(commandList, services))
 
 	// clear deletes messages in a channel -- user can delete x messages
 	commandList.addCommand("clear", func(channelID string, args ...string) {
@@ -300,6 +218,7 @@ func addCommands(commandList d, services clients) d {
 	commandList.addCommand("folders", showRootFolders(commandList, services))
 	commandList.addCommand("set-quality", setQualityProfile(commandList, services))
 	commandList.addCommand("set-folder", setRootFolder(commandList, services))
+	commandList.addCommand("discover", discoverMedia(commandList, services))
 
 	return commandList
 }

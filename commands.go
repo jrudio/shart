@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -56,11 +57,119 @@ func (discord d) showHelp(channelID string) {
 	}
 }
 
+func (discord d) getCommands() []string {
+	cmdsLen := len(discord.cmds)
+
+	cmds := make([]string, cmdsLen)
+
+	i := 0
+
+	for commandName := range discord.cmds {
+		cmds[i] = commandName
+
+		if i++; i > cmdsLen {
+			break
+		}
+	}
+
+	return cmds
+}
+
 func (discord d) showError(channelID, msg string) {
 	_, err := discord.discord.ChannelMessageSend(channelID, msg)
 
 	if err != nil && isVerbose {
 		fmt.Printf("send message failed: %v", err)
+	}
+}
+
+func search(commandList d, services clients) func(channelID string, args ...string) {
+	return func(channelID string, args ...string) {
+		argCount := len(args)
+
+		// we must have at least 2 args: media type and the title
+		if argCount < 2 {
+			fmt.Printf("%s - channel id: %s - no args\n", time.Now().String(), channelID)
+
+			output := "search requires `<movie|show> <title>`\n"
+
+			commandList.showError(channelID, output)
+			return
+		}
+
+		// we have to parse the first arg to know if we're dealing
+		// with a movie or a show type search
+		mediaType := args[0]
+
+		// remove media type from args
+		args = args[1:argCount]
+		argCount--
+
+		if argCount <= 0 {
+			commandList.showError(channelID, "A title is required")
+			return
+		}
+
+		switch mediaType {
+		case "movie":
+			title := strings.Join(args, " ")
+
+			results, err := services.radarr.Search(title)
+
+			if err != nil {
+				output := fmt.Sprintf("search failed: %v", err)
+				commandList.showError(channelID, output)
+				return
+			}
+
+			resultCount := len(results)
+			formattedResults := "No results found"
+
+			if resultCount > 0 {
+				formattedResults = "Here are your search results for `" + title + "`:\n"
+
+				for _, result := range results {
+					formattedResults += "- " + result.Title + " " + strconv.Itoa(result.Year) + " (" + strconv.Itoa(result.TmdbID) + ")\n"
+				}
+			}
+
+			commandList.discord.ChannelMessageSend(channelID, formattedResults)
+
+			return
+		case "show":
+			title := strings.Join(args, " ")
+
+			results, err := services.sonarr.Search(title)
+
+			if err != nil {
+				fmt.Printf("%v - channel id: %s - %v\n", time.Now().String(), channelID, err)
+				commandList.showError(channelID, err.Error())
+				return
+			}
+
+			resultCount := len(results)
+			formattedResults := "No results found"
+
+			if resultCount > 0 {
+				formattedResults = "Here are your search results for `" + title + "`:\n"
+
+				for _, result := range results {
+					formattedResults += "- " + result.Title + " " + strconv.Itoa(result.Year) + " (" + result.ImdbID + ")\n"
+				}
+			}
+
+			commandList.discord.ChannelMessageSend(channelID, formattedResults)
+		default:
+			// unknown type
+			output := "unknown media type: %s\n\tshould be one of `movie|show`\n"
+			output += "Here is a list of available commands: \n"
+
+			for _, commandNames := range commandList.getCommands() {
+				output += "`" + commandNames + "`\n"
+			}
+
+			commandList.showError(channelID, fmt.Sprintf(output, mediaType))
+		}
 	}
 }
 
@@ -338,6 +447,50 @@ func addMedia(commandList d, services clients) func(channelID string, args ...st
 			commandList.showError(channelID, "Sorry, `show` is not implemented!")
 		default:
 			commandList.showError(channelID, "`movie|show <tmdb-id>`")
+		}
+	}
+}
+
+// I believe radarr only has this feature
+func discoverMedia(commandList d, services clients) func(channelID string, args ...string) {
+	return func(channelID string, args ...string) {
+		argCount := len(args)
+
+		if argCount < 1 {
+			commandList.showError(channelID, "need arg `movie|show`")
+			return
+		}
+
+		mediaType := args[0]
+
+		switch mediaType {
+		case "movie":
+			movies, err := services.radarr.DiscoverMovies()
+
+			if err != nil {
+				output := fmt.Sprintf("fetch movies failed: %v", err)
+
+				fmt.Printf("%v - %s - %s\n", time.Now().String(), channelID, output)
+
+				commandList.showError(channelID, output)
+				return
+			}
+
+			output := "Here are your recommended movies:\n"
+
+			for _, movie := range movies {
+				output += fmt.Sprintf("\t- %s (%d): %s\n", movie.Title, movie.Year, movie.Overview)
+			}
+
+			if _, err := commandList.discord.ChannelMessageSend(channelID, output); err != nil {
+				fmt.Printf("%v - %s - %v\n", time.Now().String(), channelID, err)
+			}
+		default:
+			output := fmt.Sprintf("unknown media type: %s\nit should be `movie` or `show`", mediaType)
+
+			fmt.Printf("%v - %s - %s", time.Now().String(), channelID, output)
+
+			commandList.showError(channelID, output)
 		}
 	}
 }
