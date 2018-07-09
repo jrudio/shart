@@ -37,6 +37,30 @@ To get a discord token go to `https://discordapp.com/developers/applications/me`
 - go back to `https://discordapp.com/developers/applications/me` 
 - click on `token` to retrieve discord token
 
+Docker
+===
+
+Simply pull the docker image from docker hub
+
+`docker pull jrudio/shart`
+
+then
+
+- run `docker run -d jrudio/shart -token abc123 -radarr-url http://192.168.1.15:7878 -sonarr-url http://192.168.1.15:8989 -radarr-key abc123 -sonarr-key abc123`
+
+Build Image Yourself (BIY)
+
+- clone this repo onto target machine
+- make sure you're in the repo directory
+- run `docker build -t jrudio/shart .`
+- run `docker run -d jrudio/shart -token abc123 -radarr-url http://192.168.1.15:7878 -sonarr-url http://192.168.1.15:8989 -radarr-key abc123 -sonarr-key abc123`
+
+OPTIONAL: 
+
+- use [docker-compose](https://docs.docker.com/compose/install) for an easy startup
+- edit `docker-compose.yml` to match your discord/sonarr/radarr url and api key
+- run `docker-compose up -d shart`
+
 Usage
 ===
 

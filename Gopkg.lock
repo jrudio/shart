@@ -17,7 +17,13 @@
   branch = "master"
   name = "github.com/jrudio/go-radarr-client"
   packages = ["."]
-  revision = "a6b4cd1d085bbf6dc0ad0ac12611fbd2f98c2b9c"
+  revision = "3d12dc27015266b28afd87901407f108ceb43351"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/jrudio/go-sonarr-client"
+  packages = ["."]
+  revision = "7b8d2f0e06e729a2a5070ab76f9aabdf0cc2c0f7"
 
 [[projects]]
   branch = "master"
@@ -28,6 +34,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "813d7a1e7edd93dece3f7833a491974ca5f155b9cfe5e136965fc7eb0be3a0ee"
+  inputs-digest = "6f66f9cd8b575f71d9a1e4a86686cdf13ecefcb1c58a2f47bdcc9d7ed8f93f2e"
   solver-name = "gps-cdcl"
   solver-version = 1
