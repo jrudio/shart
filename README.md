@@ -98,3 +98,10 @@ otherwise you will get both of these errors:
 `aborting... a profile quality must be set`
 
 once you set those adding a movie will give you a success message: `successfully added Sicario: Day of the Soldado - (2018)`
+
+Develop
+===
+
+Build a binary with versioning
+
+`go build -i -v -ldflags="-X main.version=v0.1.0-$(git describe --always --long --dirty)" -o shart`

@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"errors"
 	"flag"
+	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"time"
 
 	"github.com/jrudio/go-radarr-client"
@@ -67,8 +69,15 @@ func getCredentials() (serviceCredentials, error) {
 	flag.StringVar(&credentials.sonarr.url, "sonarr-url", "", "url that points to your sonarr app")
 	flag.StringVar(&credentials.sonarr.apiKey, "sonarr-key", "", "api key used for sonarr")
 	flag.BoolVar(&isVerbose, "verbose", false, "output more inforation")
+	versionFlag = flag.Bool("version", false, "get program version")
 
 	flag.Parse()
+
+	// check for version flag
+	if *versionFlag {
+		fmt.Println(version)
+		os.Exit(0)
+	}
 
 	if credentials.shart.token == "" {
 		return credentials, errors.New("a token is required")

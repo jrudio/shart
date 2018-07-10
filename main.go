@@ -23,6 +23,8 @@ var (
 	isVerbose              bool
 	defaultRadarrPath      string
 	defaultRadarrQualityID int
+	version                string
+	versionFlag            *bool
 )
 
 type commands interface {
