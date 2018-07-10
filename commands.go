@@ -83,6 +83,47 @@ func (discord d) showError(channelID, msg string) {
 	}
 }
 
+func clearMessages(commandList d, services clients) func(channelID string, args ...string) {
+	return func(channelID string, args ...string) {
+		argCount := len(args)
+		messageLimit := 0
+
+		if argCount > 0 {
+			// make sure arg is an int
+			limit, err := strconv.Atoi(args[0])
+
+			if err != nil {
+				fmt.Printf("%v - clear command - channel id %s - failed because arg: %v\n",
+					time.Now().String(),
+					channelID,
+					err)
+
+				return
+			}
+
+			messageLimit = limit
+		}
+
+		messages, err := commandList.discord.ChannelMessages(channelID, messageLimit, "", "", "")
+
+		if err != nil {
+			fmt.Printf("failed to retrieve message ids: %v\n", err)
+			return
+		}
+
+		messageIDs := make([]string, len(messages))
+
+		for i, message := range messages {
+			messageIDs[i] = message.ID
+		}
+
+		if err := commandList.discord.ChannelMessagesBulkDelete(channelID, messageIDs); err != nil {
+			fmt.Printf("failed to delete messages: %v\n", err)
+			commandList.showError(channelID, err.Error())
+		}
+	}
+}
+
 func search(commandList d, services clients) func(channelID string, args ...string) {
 	return func(channelID string, args ...string) {
 		argCount := len(args)
@@ -129,7 +170,8 @@ func search(commandList d, services clients) func(channelID string, args ...stri
 				formattedResults = "Here are your search results for `" + title + "`:\n"
 
 				for _, result := range results {
-					formattedResults += "- " + result.Title + " " + strconv.Itoa(result.Year) + " (" + strconv.Itoa(result.TmdbID) + ")\n"
+					// can't display movie summary because of 2000 character limit
+					formattedResults += "- " + result.Title + " (" + strconv.Itoa(result.Year) + ") `" + strconv.Itoa(result.TmdbID) + "`\n"
 				}
 			}
 

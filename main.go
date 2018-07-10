@@ -4,10 +4,8 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"strconv"
 	"strings"
 	"syscall"
-	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/jrudio/go-radarr-client"
@@ -174,45 +172,7 @@ func addCommands(commandList d, services clients) d {
 	commandList.addCommand("search", search(commandList, services))
 
 	// clear deletes messages in a channel -- user can delete x messages
-	commandList.addCommand("clear", func(channelID string, args ...string) {
-		argCount := len(args)
-		messageLimit := 0
-
-		if argCount > 0 {
-			// make sure arg is an int
-			limit, err := strconv.Atoi(args[0])
-
-			if err != nil {
-				fmt.Printf("%v - clear command - channel id %s - failed because arg: %v\n",
-					time.Now().String(),
-					channelID,
-					err)
-
-				return
-			}
-
-			messageLimit = limit
-		}
-
-		messages, err := commandList.discord.ChannelMessages(channelID, messageLimit, "", "", "")
-
-		if err != nil {
-			fmt.Printf("failed to retrieve message ids: %v\n", err)
-			return
-		}
-
-		messageIDs := make([]string, len(messages))
-
-		for i, message := range messages {
-			messageIDs[i] = message.ID
-		}
-
-		if err := commandList.discord.ChannelMessagesBulkDelete(channelID, messageIDs); err != nil {
-			fmt.Printf("failed to delete messages: %v\n", err)
-			commandList.showError(channelID, err.Error())
-		}
-	})
-
+	commandList.addCommand("clear", clearMessages(commandList, services))
 	commandList.addCommand("add", addMedia(commandList, services))
 	commandList.addCommand("quality", showQualityProfiles(commandList, services))
 	commandList.addCommand("folders", showRootFolders(commandList, services))
