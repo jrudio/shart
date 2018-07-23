@@ -17,19 +17,19 @@
   branch = "master"
   name = "github.com/jrudio/go-radarr-client"
   packages = ["."]
-  revision = "3d12dc27015266b28afd87901407f108ceb43351"
+  revision = "d8adfc82a004b9e0d3d7fa3c92ab4432ae81b176"
 
 [[projects]]
   branch = "master"
   name = "github.com/jrudio/go-sonarr-client"
   packages = ["."]
-  revision = "7b8d2f0e06e729a2a5070ab76f9aabdf0cc2c0f7"
+  revision = "93ff6dcbcaa9831fc351aadb54c7cb2eab935ff0"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
-  packages = ["nacl/secretbox","poly1305","salsa20/salsa"]
-  revision = "1a580b3eff7814fc9b40602fd35256c63b50f491"
+  packages = ["internal/subtle","nacl/secretbox","poly1305","salsa20/salsa"]
+  revision = "c126467f60eb25f8f27e5a981f32a87e3965053f"
 
 [solve-meta]
   analyzer-name = "dep"

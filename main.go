@@ -21,6 +21,8 @@ var (
 	keywordLen             = 0
 	commandList            commands
 	isVerbose              bool
+	defaultSonarrPath      string
+	defaultSonarrQualityID int
 	defaultRadarrPath      string
 	defaultRadarrQualityID int
 	version                string

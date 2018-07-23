@@ -249,7 +249,26 @@ func showQualityProfiles(commandList d, services clients) func(channelID string,
 				return
 			}
 		case "show":
-			commandList.discord.ChannelMessageSend(channelID, "unable to get profiles as `show` is not implemented")
+			profiles, err := services.sonarr.GetProfiles()
+
+			if err != nil {
+				errMsg := fmt.Sprintf("failed to fetch profiles from sonarr: %v\n", err)
+				fmt.Printf(errMsg)
+				commandList.showError(channelID, errMsg)
+				return
+			}
+
+			output := "Here are the available quality profiles for sonarr:\n"
+
+			for _, profile := range profiles {
+				output += fmt.Sprintf("\t`id: %d` %s\n", profile.ID, profile.Name)
+			}
+
+			if _, err := commandList.discord.ChannelMessageSend(channelID, output); err != nil {
+				fmt.Printf("chan id: %s - %v\n", channelID, err)
+				return
+			}
+
 		default:
 			errMsg := fmt.Sprintf("unknown media type: %s\n", mediaType)
 			fmt.Printf(errMsg)
@@ -298,6 +317,10 @@ func setQualityProfile(commandList d, services clients) func(channelID string, a
 			defaultRadarrQualityID = profileID
 			output := "successfully set movie quality to `%d`"
 			commandList.discord.ChannelMessageSend(channelID, fmt.Sprintf(output, defaultRadarrQualityID))
+		case "show":
+			defaultSonarrQualityID = profileID
+			output := "successfully set series quality to `%d`"
+			commandList.discord.ChannelMessageSend(channelID, fmt.Sprintf(output, defaultSonarrQualityID))
 		default:
 			output := "unknown media type: %s\n\tshould be one of `movie|show`"
 			commandList.discord.ChannelMessageSend(channelID, fmt.Sprintf(output, mediaType))
@@ -341,7 +364,25 @@ func showRootFolders(commandList d, services clients) func(channelID string, arg
 				return
 			}
 		case "show":
-			commandList.discord.ChannelMessageSend(channelID, "unable to get folders as `show` is not implemented")
+			folders, err := services.sonarr.GetRootFolders()
+
+			if err != nil {
+				errMsg := fmt.Sprintf("failed to fetch folders from sonarr: %v\n", err)
+				fmt.Printf(errMsg)
+				commandList.showError(channelID, errMsg)
+				return
+			}
+
+			output := "Here are the available root folders for sonarr:\n"
+
+			for _, folder := range folders {
+				output += fmt.Sprintf("\t`id: %d` - %s\n", folder.ID, folder.Path)
+			}
+
+			if _, err := commandList.discord.ChannelMessageSend(channelID, output); err != nil {
+				fmt.Printf("chan id: %s - %v\n", channelID, err)
+				return
+			}
 		default:
 			errMsg := fmt.Sprintf("unknown media type: %s\n", mediaType)
 			fmt.Printf(errMsg)
@@ -409,6 +450,44 @@ func setRootFolder(commandList d, services clients) func(channelID string, args 
 
 			output := "successfully set root folder to `%s`"
 			commandList.discord.ChannelMessageSend(channelID, fmt.Sprintf(output, defaultRadarrPath))
+		case "show":
+			if strings.HasPrefix(folderPathOrID, "/") {
+				defaultSonarrPath = folderPathOrID
+			} else {
+				pathID, err := strconv.Atoi(folderPathOrID)
+
+				if err != nil {
+					output := fmt.Sprintf("failed to convert path id to int: %v", err)
+					fmt.Printf("channel id: %s - %s\n", channelID, output)
+					commandList.showError(channelID, output)
+					return
+				}
+
+				folders, err := services.sonarr.GetRootFolders()
+
+				if err != nil {
+					output := fmt.Sprintf("fetch sonarr root folders failed: %v", err)
+					fmt.Printf("channel id: %s - %s\n", channelID, output)
+					commandList.showError(channelID, output)
+					return
+				}
+
+				for _, folder := range folders {
+					if folder.ID == pathID {
+						defaultSonarrPath = folder.Path
+					}
+				}
+
+				if defaultSonarrPath == "" {
+					output := "could not find stored path via id: `%s`"
+					commandList.showError(channelID, fmt.Sprintf(output, folderPathOrID))
+					return
+				}
+			}
+
+			output := "successfully set root folder to `%s`"
+			commandList.discord.ChannelMessageSend(channelID, fmt.Sprintf(output, defaultSonarrPath))
+
 		default:
 			output := "unknown media type: %s\n\tshould be one of `movie|show`"
 			commandList.discord.ChannelMessageSend(channelID, fmt.Sprintf(output, mediaType))
@@ -495,13 +574,13 @@ func addMedia(commandList d, services clients) func(channelID string, args ...st
 			}
 
 			// make sure profile quality and folder path are set
-			if defaultRadarrPath == "" {
+			if defaultSonarrPath == "" {
 				commandList.showError(channelID, "aborting... a root folder path must be set")
 				commandList.showHelp(channelID)
 				return
 			}
 
-			if defaultRadarrQualityID == 0 {
+			if defaultSonarrQualityID == 0 {
 				commandList.showError(channelID, "aborting... a profile quality must be set")
 				commandList.showHelp(channelID)
 				return
@@ -509,22 +588,22 @@ func addMedia(commandList d, services clients) func(channelID string, args ...st
 
 			// commandList.showError(channelID, "Sorry, `show` is not implemented!")
 
-			requestedShow, err := services.sonarr.GetSeries(tvdbID)
+			requestedShow, err := services.sonarr.GetSeriesFromTVDB(tvdbID)
 
 			if err != nil {
-				fmt.Printf("failed to add movie: %v\n", err)
-				commandList.showError(channelID, fmt.Sprintf("failed fetching movie: %v", err))
+				fmt.Printf("failed to add show: %v\n", err)
+				commandList.showError(channelID, fmt.Sprintf("failed fetching show: %v", err))
 				return
 			}
 
 			// tweak fields to make a proper request
 			requestedShow.AddOptions.SearchForMissingEpisodes = true
 			requestedShow.Monitored = true
-			requestedShow.QualityProfileID = defaultRadarrQualityID
+			requestedShow.QualityProfileID = defaultSonarrQualityID
 			requestedShow.Path = defaultSonarrPath + requestedShow.Title
 
-			if err := services.sonarr.AddSeries(requestedShow); err != nil {
-				fmt.Printf("failed to add movie: %v\n", err)
+			if err := services.sonarr.AddSeries(*requestedShow); err != nil {
+				fmt.Printf("failed to add show: %v\n", err)
 				commandList.showError(channelID, err.Error())
 				return
 			}
