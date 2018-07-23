@@ -170,14 +170,12 @@ func search(commandList d, services clients) func(channelID string, args ...stri
 				formattedResults = "Here are your search results for `" + title + "`:\n"
 
 				for _, result := range results {
-					// can't display movie summary because of 2000 character limit
+					// can't display movie summary because of Discord's 2000 character limit
 					formattedResults += "- " + result.Title + " (" + strconv.Itoa(result.Year) + ") `" + strconv.Itoa(result.TmdbID) + "`\n"
 				}
 			}
 
 			commandList.discord.ChannelMessageSend(channelID, formattedResults)
-
-			return
 		case "show":
 			title := strings.Join(args, " ")
 
@@ -196,7 +194,8 @@ func search(commandList d, services clients) func(channelID string, args ...stri
 				formattedResults = "Here are your search results for `" + title + "`:\n"
 
 				for _, result := range results {
-					formattedResults += "- " + result.Title + " " + strconv.Itoa(result.Year) + " (" + result.ImdbID + ")\n"
+					// can't display movie summary because of Discord's 2000 character limit
+					formattedResults += "- " + result.Title + " (" + strconv.Itoa(result.Year) + ") `" + strconv.Itoa(result.TvdbID) + "`\n"
 				}
 			}
 
@@ -430,17 +429,17 @@ func addMedia(commandList d, services clients) func(channelID string, args ...st
 
 		// first arg should be 'movie' or 'show'
 		mediaType := args[0]
-		tmdbIDstr := args[1]
+		mediaID := args[1]
 
-		if tmdbIDstr == "" {
-			commandList.showError(channelID, "a tmdb id is required\n `movie|show <tmdb-id>`")
+		if mediaID == "" {
+			commandList.showError(channelID, "a tmdb/tvdb id is required\n `movie|show <id>`")
 			return
 		}
 
 		switch mediaType {
 		case "movie":
 			// use radarr to add movie
-			tmdbID, err := strconv.Atoi(tmdbIDstr)
+			tmdbID, err := strconv.Atoi(mediaID)
 
 			if err != nil {
 				output := fmt.Sprintf("failed to convert tmdb id to int: %v", err)
@@ -486,7 +485,53 @@ func addMedia(commandList d, services clients) func(channelID string, args ...st
 			commandList.discord.ChannelMessageSend(channelID, output)
 		case "show":
 			// use sonarr to add movie
-			commandList.showError(channelID, "Sorry, `show` is not implemented!")
+			tvdbID, err := strconv.Atoi(mediaID)
+
+			if err != nil {
+				output := fmt.Sprintf("failed to convert tvdb id to int: %v", err)
+				fmt.Printf("channel id: %s - %s\n", channelID, output)
+				commandList.showError(channelID, output)
+				return
+			}
+
+			// make sure profile quality and folder path are set
+			if defaultRadarrPath == "" {
+				commandList.showError(channelID, "aborting... a root folder path must be set")
+				commandList.showHelp(channelID)
+				return
+			}
+
+			if defaultRadarrQualityID == 0 {
+				commandList.showError(channelID, "aborting... a profile quality must be set")
+				commandList.showHelp(channelID)
+				return
+			}
+
+			// commandList.showError(channelID, "Sorry, `show` is not implemented!")
+
+			requestedShow, err := services.sonarr.GetSeries(tvdbID)
+
+			if err != nil {
+				fmt.Printf("failed to add movie: %v\n", err)
+				commandList.showError(channelID, fmt.Sprintf("failed fetching movie: %v", err))
+				return
+			}
+
+			// tweak fields to make a proper request
+			requestedShow.AddOptions.SearchForMissingEpisodes = true
+			requestedShow.Monitored = true
+			requestedShow.QualityProfileID = defaultRadarrQualityID
+			requestedShow.Path = defaultSonarrPath + requestedShow.Title
+
+			if err := services.sonarr.AddSeries(requestedShow); err != nil {
+				fmt.Printf("failed to add movie: %v\n", err)
+				commandList.showError(channelID, err.Error())
+				return
+			}
+
+			output := fmt.Sprintf("successfully added `%s (%d)`", requestedShow.Title, requestedShow.Year)
+			commandList.discord.ChannelMessageSend(channelID, output)
+
 		default:
 			commandList.showError(channelID, "`movie|show <tmdb-id>`")
 		}
