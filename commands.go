@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	radarr "github.com/jrudio/go-radarr-client"
+	sonarr "github.com/jrudio/go-sonarr-client"
 )
 
 type d struct {
@@ -554,9 +556,21 @@ func addMedia(commandList d, services clients) func(channelID string, args ...st
 			requestedMovie.QualityProfileID = defaultRadarrQualityID
 			requestedMovie.RootFolderPath = defaultRadarrPath
 
-			if err := services.radarr.AddMovie(requestedMovie); err != nil {
-				fmt.Printf("failed to add movie: %v\n", err)
-				commandList.showError(channelID, err.Error())
+			if errors := services.radarr.AddMovie(requestedMovie); errors != nil {
+				output := ""
+				logOutput := ""
+
+				for _, err := range errors {
+					if err == radarr.ErrorMovieExists {
+						output += "`" + requestedMovie.Title + " (" + strconv.Itoa(requestedMovie.Year) + ")` already added"
+					}
+
+					logOutput += err.Error() + "\n"
+
+				}
+
+				fmt.Printf("failed to add movie - channel id: %s - %s\n", channelID, logOutput)
+				commandList.discord.ChannelMessageSend(channelID, output)
 				return
 			}
 
@@ -602,9 +616,20 @@ func addMedia(commandList d, services clients) func(channelID string, args ...st
 			requestedShow.QualityProfileID = defaultSonarrQualityID
 			requestedShow.Path = defaultSonarrPath + requestedShow.Title
 
-			if err := services.sonarr.AddSeries(*requestedShow); err != nil {
-				fmt.Printf("failed to add show: %v\n", err)
-				commandList.showError(channelID, err.Error())
+			if errors := services.sonarr.AddSeries(*requestedShow); errors != nil {
+				output := ""
+				logOutput := ""
+
+				for _, err := range errors {
+					if err == sonarr.ErrorSeriesExists {
+						output += "`" + requestedShow.Title + " (" + strconv.Itoa(requestedShow.Year) + ")` already added"
+					}
+
+					logOutput += err.Error() + "\n"
+				}
+
+				fmt.Printf("failed to add show - channel id: %s - %s\n", channelID, logOutput)
+				commandList.discord.ChannelMessageSend(channelID, output)
 				return
 			}
 
