@@ -104,4 +104,4 @@ Develop
 
 Build a binary with versioning
 
-`go build -i -v -ldflags="-X main.version=v0.1.0-$(git describe --always --long --dirty)" -o shart`
+`go build -i -v -ldflags="-X main.version=$(git describe --always --long --dirty)" -o shart`

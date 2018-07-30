@@ -17,13 +17,13 @@
   branch = "master"
   name = "github.com/jrudio/go-radarr-client"
   packages = ["."]
-  revision = "f22ecc592a896f4be2d6f8fa22cb4f16e8507090"
+  revision = "6731daa533f2588f6d5480935a36700ed6370cf2"
 
 [[projects]]
   branch = "master"
   name = "github.com/jrudio/go-sonarr-client"
   packages = ["."]
-  revision = "7ba7baa3d4f16299e33ff745f2f20bec4294be86"
+  revision = "ec124ce2d81ee6699e4e27c2527e77dc80b241ba"
 
 [[projects]]
   branch = "master"
