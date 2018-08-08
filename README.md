@@ -7,8 +7,10 @@ Commands:
 
 - `search <title>` (for new media)
 - `clear` (remove messages if there's too much clutter)
-- `add <tmdb-id>` to be monitored
+- `add <tmdb-id-or-tvdb-id>` to be monitored
 - `quality` to retrieve avilable quality profiles
+- `library` display wanted or downloaded movie/shows
+- `discover` show recommended movies
 - `folders` to retrieve avilable root folders
 - `set-quality <profile-id>` to set quality profile to make a valid add request
 - `set-folder <folder-path-or-id>` to set folder path make a valid add request

@@ -17,7 +17,7 @@
   branch = "master"
   name = "github.com/jrudio/go-radarr-client"
   packages = ["."]
-  revision = "6731daa533f2588f6d5480935a36700ed6370cf2"
+  revision = "8c6eeb33f4b46e16fdb29b55742fca28239f14cf"
 
 [[projects]]
   branch = "master"

@@ -183,6 +183,7 @@ func addCommands(commandList d, services clients) d {
 	commandList.addCommand("set-quality", setQualityProfile(commandList, services))
 	commandList.addCommand("set-folder", setRootFolder(commandList, services))
 	commandList.addCommand("discover", discoverMedia(commandList, services))
+	commandList.addCommand("library", showLibrary(commandList, services))
 
 	return commandList
 }

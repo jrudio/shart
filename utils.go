@@ -107,3 +107,7 @@ func initializeClients(credentials serviceCredentials) (clients, error) {
 
 	return services, nil
 }
+
+func logPrint(chanID, message string) {
+	fmt.Printf("%s - channel id: %s - %s\n", time.Now().String(), chanID, message)
+}
