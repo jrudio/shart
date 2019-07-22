@@ -71,11 +71,18 @@ func checkErrAndExit(err error) {
 }
 
 func main() {
+
 	credentials, err := getCredentials()
 
 	if err != nil {
-		fmt.Printf("need credentials: %v\n", err)
-		os.Exit(1)
+		// most likely errTokenRequired error because user did not pass info via flags
+		// try secrets.toml
+		credentials, err = getCredentialsTOML("./secrets.toml")
+
+		if err != nil {
+			fmt.Printf("need credentials: %v\n", err)
+			os.Exit(1)
+		}
 	}
 
 	if keyword == "" {

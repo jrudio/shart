@@ -19,10 +19,9 @@ Commands:
 Install
 ===
 
-- Install the Go compiler
-- Install go [dep](https://github.com/golang/dep)
+- Install the latest Go compiler
 - clone this project
-- run `dep ensure` in project folder
+- run `go mod init` in project folder
 - run `go build -o shart`
 - run `./shart -token <discord-token> -radarr-url http://192.168.1.15:7878 -radarr-key abc123 -sonarr-url http://192.168.1.15:8989 -sonarr-key abc123`
 

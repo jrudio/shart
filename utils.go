@@ -5,14 +5,18 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
 	"time"
 
+	"github.com/BurntSushi/toml"
 	"github.com/jrudio/go-radarr-client"
 	"github.com/jrudio/go-sonarr-client"
 )
+
+const errTokenRequired = "a token is required"
 
 // utils.go holds network utils and function helpers
 
@@ -84,6 +88,65 @@ func getCredentials() (serviceCredentials, error) {
 	}
 
 	return credentials, nil
+}
+
+type discordTOML struct {
+	Token string
+}
+
+type sonarrTOML struct {
+	Host string
+	Key  string
+}
+
+type radarrTOML struct {
+	Host string
+	Key  string
+}
+
+type credentialWrapper struct {
+	Discord discordTOML
+	Sonarr  sonarrTOML
+	Radarr  radarrTOML
+}
+
+// getCredentialsTOML grabs apikeys and auth tokens via .toml file
+func getCredentialsTOML(path string) (serviceCredentials, error) {
+	credWrapper := credentialWrapper{}
+	credentials := serviceCredentials{}
+
+	fileBytes, err := ioutil.ReadFile(path)
+
+	if err != nil {
+		return credentials, err
+	}
+
+	if err := toml.Unmarshal(fileBytes, &credWrapper); err != nil {
+		return credentials, err
+	}
+
+	credentials = copyCreds(credWrapper, credentials)
+
+	if credentials.shart.token == "" {
+		return credentials, errors.New(errTokenRequired)
+	}
+
+	return credentials, nil
+}
+
+func copyCreds(credentialFrom credentialWrapper, credentialTo serviceCredentials) serviceCredentials {
+	// radarr
+	credentialTo.radarr.url = credentialFrom.Radarr.Host
+	credentialTo.radarr.apiKey = credentialFrom.Radarr.Key
+
+	// sonarr
+	credentialTo.sonarr.url = credentialFrom.Sonarr.Host
+	credentialTo.sonarr.apiKey = credentialFrom.Sonarr.Key
+
+	// discord
+	credentialTo.shart.token = credentialFrom.Discord.Token
+
+	return credentialTo
 }
 
 func initializeClients(credentials serviceCredentials) (clients, error) {

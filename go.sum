@@ -1,0 +1,12 @@
+github.com/BurntSushi/toml v0.3.1 h1:WXkYYl6Yr3qBf1K79EBnL4mak0OimBfB0XUf9Vl28OQ=
+github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
+github.com/bwmarrin/discordgo v0.18.0 h1:XopVQXCIFy7Cr2eT7NcYcm4k0l2PYX+AP5RUbIWX2/8=
+github.com/bwmarrin/discordgo v0.18.0/go.mod h1:5NIvFv5Z7HddYuXbuQegZ684DleQaCFqChP2iuBivJ8=
+github.com/gorilla/websocket v1.2.0 h1:VJtLvh6VQym50czpZzx07z/kw9EgAxI3x1ZB8taTMQQ=
+github.com/gorilla/websocket v1.2.0/go.mod h1:E7qHFY5m1UJ88s3WnNqhKjPHQ0heANvMoAMk2YaljkQ=
+github.com/jrudio/go-radarr-client v0.0.0-20180808030014-8c6eeb33f4b4 h1:xqSwXR68xz9MHMRpaGNAHgrHpTi1TZbNLunXSzwViUc=
+github.com/jrudio/go-radarr-client v0.0.0-20180808030014-8c6eeb33f4b4/go.mod h1:HSlzCJGkWJJv7wHxYBVYruu/vXyd4vjIzFvHI8a6dZA=
+github.com/jrudio/go-sonarr-client v0.0.0-20180729192042-ec124ce2d81e h1:uYeA5DnqIJt0lYwnIuyWQsHxo6dPjcT534JvmRYX4Kw=
+github.com/jrudio/go-sonarr-client v0.0.0-20180729192042-ec124ce2d81e/go.mod h1:DWL7hHtr460m8lKe+T2rkza24AQavzZX6gn5hXTUL74=
+golang.org/x/crypto v0.0.0-20180723164146-c126467f60eb h1:Ah9YqXLj6fEgeKqcmBuLCbAsrF3ScD7dJ/bYM0C6tXI=
+golang.org/x/crypto v0.0.0-20180723164146-c126467f60eb/go.mod h1:6SG95UA2DQfeDnfUPMdvaQW0Q7yPrPDi9nlGo2tz2b4=
